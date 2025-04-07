@@ -1,0 +1,29 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme -->
+    <style name="Base.Theme.FractureAi" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here -->
+        <!-- Define your own colorPrimary if needed, or leave it to dynamic colors -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+        <!-- Override the default button style to prevent purple tint -->
+        <item name="materialButtonStyle">@style/Widget.FractureAi.Button</item>
+    </style>
+
+    <!-- Custom button style to remove default tint and background -->
+    <style name="Widget.FractureAi.Button" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@null</item> <!-- Disable the default tint -->
+        <item name="android:background">@null</item> <!-- Remove any default background -->
+        <item name="android:textAllCaps">false</item> <!-- Ensure text is not all caps -->
+    </style>
+
+    <style name="Theme.FractureAi" parent="Base.Theme.FractureAi" />
+
+    <style name="Theme.FractureAi.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="Theme.FractureAi.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="Theme.FractureAi.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+</resources>
