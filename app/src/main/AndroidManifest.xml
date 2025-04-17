@@ -13,6 +13,18 @@
         android:theme="@style/Theme.FractureAi"
         tools:targetApi="31">
         <activity
+            android:name=".ChatBoot"
+            android:exported="false" />
+        <activity
+            android:name=".uploadImages"
+            android:exported="false" />
+        <activity
+            android:name=".Profil"
+            android:exported="false" />
+        <activity
+            android:name=".SecurityProfil"
+            android:exported="false" />
+        <activity
             android:name=".SignIn"
             android:exported="false"
             android:label="@string/title_activity_profil"
@@ -27,10 +39,10 @@
             android:name=".SignUpEmail"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
+            android:name=".welcome"
             android:exported="false" />
         <activity
-            android:name=".Profil"
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -38,7 +50,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".ForgotPassword"
             android:exported="false" />

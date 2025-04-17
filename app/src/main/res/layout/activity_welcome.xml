@@ -5,7 +5,6 @@
     android:layout_height="match_parent"
     android:background="#F5F5F5">
 
-
     <ScrollView
         android:id="@+id/scroll_view"
         android:layout_width="match_parent"
@@ -18,25 +17,22 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:orientation="vertical"
-            android:gravity="center_horizontal"
+            android:gravity="center"
             android:padding="20dp"
             android:background="#F5F5F5">
-
-
 
             <ImageView
                 android:id="@+id/logo"
                 android:layout_width="328dp"
                 android:layout_height="79dp"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="24dp"
+                android:layout_gravity="center"
                 android:adjustViewBounds="true"
                 android:src="@drawable/logo_app" />
 
             <androidx.cardview.widget.CardView
-                android:id="@+id/confirmation_container"
+                android:id="@+id/welcome_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -47,65 +43,54 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
                     android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/light_grey_background"
                     android:padding="15dp">
 
-
-                    <ImageView
-                        android:id="@+id/success_icon"
-                        android:layout_width="60dp"
-                        android:layout_height="60dp"
-                        android:layout_marginBottom="16dp"
-                        android:src="@drawable/ic_success"
-                       />
-
-
                     <TextView
-                        android:id="@+id/confirmation_title"
+                        android:id="@+id/welcome_title"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center_horizontal"
                         android:layout_marginBottom="8dp"
-                        android:text="Email envoyé !"
+                        android:text="Bienvenue sur FractureScan AI"
                         android:textColor="#6B48FF"
-                        android:textSize="22sp"
+                        android:textSize="20sp"
                         android:textStyle="bold" />
 
-
                     <TextView
-                        android:id="@+id/confirmation_message"
-                        android:layout_width="wrap_content"
+                        android:id="@+id/welcome_subtitle"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center_horizontal"
-                        android:layout_marginBottom="8dp"
-                        android:gravity="center"
-                        android:text="Un email contenant les instructions de réinitialisation de mot de passe a été envoyé à"
+                        android:layout_marginBottom="16dp"
+                        android:text="Découvrez notre technologie de pointe pour analyser des radiographies et profitez de notre assistant 24/7"
                         android:textColor="#666666"
-                        android:textSize="14sp" />
-
-                    <TextView
-                        android:id="@+id/email_address"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_horizontal"
-                        android:layout_marginBottom="16dp"
-                        android:text="adnane@gmail.com"
-                        android:textColor="#6B48FF"
                         android:textSize="14sp"
-                        android:textStyle="bold" />
-
+                        android:gravity="center"
+                        android:textAlignment="center" />
 
                     <Button
-                        android:id="@+id/btn_close"
+                        android:id="@+id/btn_start"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:layout_marginTop="16dp"
-                        android:layout_marginBottom="16dp"
                         android:background="@drawable/button_background"
-                        android:text="Fermer"
+                        android:text="Commencer"
                         android:textColor="#FFFFFF"
                         android:textStyle="bold"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/btn_later"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginBottom="16dp"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:text="Plus tard"
+                        android:textColor="#6B48FF"
                         android:textSize="16sp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
