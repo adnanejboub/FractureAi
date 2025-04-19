@@ -5,7 +5,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -15,10 +17,11 @@ import androidx.core.view.WindowInsetsCompat;
 
 public class SignUpEmail extends AppCompatActivity {
 
-    private Button btnPhone;
+    private Button btnPhone, btnRegister;
     private TextView loginText;
-
-    private ImageView logo_app ;
+    private ImageView logo_app;
+    private EditText inputName, inputEmail, inputPassword, inputConfirmPassword;
+    private LinearLayout btnGoogle, btnFacebook;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,6 +29,7 @@ public class SignUpEmail extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_sign_up_email);
 
+        // Appliquer les marges liées aux barres système
         View rootView = findViewById(android.R.id.content);
         if (rootView != null) {
             ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
@@ -33,63 +37,67 @@ public class SignUpEmail extends AppCompatActivity {
                 v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
                 return insets;
             });
-        } else {
-            Log.e("SignUpEmail", "Root view not found");
         }
 
+        // Initialisation des composants
+        logo_app = findViewById(R.id.logo);
         btnPhone = findViewById(R.id.btn_phone);
         loginText = findViewById(R.id.login_text);
-        logo_app = findViewById(R.id.logo) ;
+        btnRegister = findViewById(R.id.btn_register);
+        inputName = findViewById(R.id.input_name);
+        inputEmail = findViewById(R.id.input_email);
+        inputPassword = findViewById(R.id.input_password);
+        inputConfirmPassword = findViewById(R.id.input_confirm_password);
+        btnGoogle = findViewById(R.id.btn_google);
+        btnFacebook = findViewById(R.id.btn_facebook);
 
-        if (btnPhone == null) {
-            Log.e("SignUpEmail", "Bouton Téléphone n'existe pas");
-            return;
-        }
-        if (loginText == null) {
-            Log.e("SignUpEmail", "Texte de connexion n'existe pas");
-            return;
-        }
-
-        if (logo_app == null) {
-            Log.e("SignUpEmail", "Logo de l'app n'existe pas ");
-            return;
-        }
-
-        logo_app.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    Intent intent = new Intent(SignUpEmail.this , MainActivity.class) ;
-                    startActivity(intent);
-                } catch (Exception e) {
-                    Log.e("SignUpEmail", "Erreur lors du démarrage de l'activité MainActivity : " + e.getMessage());
-                }
-
+        // Actions sur clic
+        logo_app.setOnClickListener(v -> {
+            try {
+                startActivity(new Intent(SignUpEmail.this, MainActivity.class));
+            } catch (Exception e) {
+                Log.e("SignUpEmail", "Erreur logo_app : " + e.getMessage());
             }
         });
 
-        btnPhone.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    Intent intent = new Intent(SignUpEmail.this, SignUpTelephone.class);
-                    startActivity(intent);
-                } catch (Exception e) {
-                    Log.e("SignUpEmail", "Erreur lors du démarrage de l'activité SignUpTelephone : " + e.getMessage());
-                }
+        btnPhone.setOnClickListener(v -> {
+            try {
+                startActivity(new Intent(SignUpEmail.this, SignUpTelephone.class));
+            } catch (Exception e) {
+                Log.e("SignUpEmail", "Erreur btn_phone : " + e.getMessage());
             }
         });
 
-        loginText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    Intent intent = new Intent(SignUpEmail.this, SignInEmail.class);
-                    startActivity(intent);
-                } catch (Exception e) {
-                    Log.e("SignUpEmail", "Erreur lors du démarrage de l'activité SignIn : " + e.getMessage());
-                }
+        loginText.setOnClickListener(v -> {
+            try {
+                startActivity(new Intent(SignUpEmail.this, SignInEmail.class));
+            } catch (Exception e) {
+                Log.e("SignUpEmail", "Erreur loginText : " + e.getMessage());
             }
         });
+
+        btnRegister.setOnClickListener(v -> {
+            // Exemple simple de validation (à adapter selon tes besoins)
+            String name = inputName.getText().toString().trim();
+            String email = inputEmail.getText().toString().trim();
+            String password = inputPassword.getText().toString();
+            String confirmPassword = inputConfirmPassword.getText().toString();
+
+            if (name.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+                Log.e("Inscription", "Tous les champs sont requis !");
+                return;
+            }
+
+            if (!password.equals(confirmPassword)) {
+                Log.e("Inscription", "Les mots de passe ne correspondent pas !");
+                return;
+            }
+
+            // Simuler l'inscription réussie (tu peux ensuite appeler une API)
+            Log.i("Inscription", "Utilisateur inscrit : " + name + ", " + email);
+        });
+
+        btnGoogle.setOnClickListener(v -> Log.i("SignUp", "Connexion avec Google"));
+        btnFacebook.setOnClickListener(v -> Log.i("SignUp", "Connexion avec Facebook"));
     }
 }
