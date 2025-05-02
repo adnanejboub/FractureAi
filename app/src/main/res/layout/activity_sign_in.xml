@@ -5,6 +5,7 @@
     android:layout_height="match_parent"
     android:background="#F5F5F5">
 
+
     <ScrollView
         android:id="@+id/scroll_view"
         android:layout_width="match_parent"
@@ -32,6 +33,7 @@
                 android:adjustViewBounds="true"
                 android:src="@drawable/logo_app" />
 
+
             <androidx.cardview.widget.CardView
                 android:id="@+id/login_container"
                 android:layout_width="match_parent"
@@ -47,6 +49,7 @@
                     android:orientation="vertical"
                     android:padding="15dp">
 
+
                     <TextView
                         android:id="@+id/title"
                         android:layout_width="wrap_content"
@@ -57,6 +60,7 @@
                         android:textColor="#6B48FF"
                         android:textSize="22sp"
                         android:textStyle="bold" />
+
 
                     <TextView
                         android:id="@+id/subtitle"
@@ -103,55 +107,54 @@
                     </LinearLayout>
 
 
-                    <EditText
-                        android:id="@+id/input_phone"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:layout_marginTop="20dp"
                         android:layout_marginBottom="12dp"
                         android:background="@drawable/edittext_background"
-                        android:hint="Entrez votre Téléphone"
-                        android:inputType="phone"
-                        android:padding="12dp"
-                        android:textColor="#222222"
-                        android:textColorHint="#999999"
-                        android:textSize="16sp" />
+                        android:orientation="horizontal"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp">
 
+                        <com.hbb20.CountryCodePicker
+                            android:id="@+id/countryCodePicker"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="center_vertical"
+                            app:ccp_defaultPhoneCode="212"
+                            app:ccp_showFlag="true"
+                            app:ccp_showNameCode="false"
+                            app:ccp_textSize="16sp"
+                            app:ccp_arrowSize="12dp"
+                            app:ccp_contentColor="#222222" />
 
-                    <EditText
-                        android:id="@+id/input_password"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginBottom="12dp"
-                        android:background="@drawable/edittext_background"
-                        android:hint="Entrez votre mot de passe"
-                        android:inputType="textPassword"
-                        android:padding="12dp"
-                        android:textColor="#222222"
-                        android:textColorHint="#999999"
-                        android:textSize="16sp" />
+                        <EditText
+                            android:id="@+id/input_phone"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:background="@null"
+                            android:hint="Numéro de téléphone"
+                            android:inputType="phone"
+                            android:textColor="#222222"
+                            android:textColorHint="#999999"
+                            android:textSize="16sp" />
+                    </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/forgot_password"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="end"
-                        android:layout_marginTop="12dp"
-                        android:layout_marginBottom="20dp"
-                        android:text="Mot de passe oublié ?"
-                        android:textColor="#6B48FF"
-                        android:textSize="12sp" />
 
                     <Button
                         android:id="@+id/btn_login"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
+                        android:layout_marginTop="12dp"
                         android:layout_marginBottom="16dp"
                         android:background="@drawable/button_background"
-                        android:text="Se connecter"
+                        android:text="Continuer"
                         android:textColor="#FFFFFF"
                         android:textStyle="bold"
                         android:textSize="16sp" />
+
 
                     <TextView
                         android:id="@+id/or_text"
@@ -226,6 +229,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
+
             <TextView
                 android:id="@+id/signup_text"
                 android:layout_width="wrap_content"
@@ -238,4 +242,27 @@
                 android:textSize="14sp" />
         </LinearLayout>
     </ScrollView>
+
+
+    <FrameLayout
+        android:id="@+id/loading_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#CCFFFFFF"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminateTint="#6B48FF"
+            style="?android:attr/progressBarStyleLarge" />
+    </FrameLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

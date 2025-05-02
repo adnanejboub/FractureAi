@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "198273905829",
-    "project_id": "fractureai-e812e",
-    "storage_bucket": "fractureai-e812e.firebasestorage.app"
+    "project_number": "11557855532",
+    "project_id": "fractureai-75533",
+    "storage_bucket": "fractureai-75533.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:198273905829:android:d2fc0994ee13562e03094c",
+        "mobilesdk_app_id": "1:11557855532:android:5bb32bca490ec62930cc89",
         "android_client_info": {
           "package_name": "com.fractureai"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCc1lrWSc3lrTlP7iBOoZziWfiTsMiL4vc"
+          "current_key": "AIzaSyASoNZIbyH5-Ro9CJEQEgDAnwDEbjW8XYk"
         }
       ],
       "services": {

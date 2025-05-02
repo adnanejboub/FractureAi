@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@drawable/ic_home"
+            android:title="Accueil" />
+        <item
+            android:id="@+id/nav_scan"
+            android:icon="@drawable/ic_scanner"
+            android:title="Scanner" />
+        <item
+            android:id="@+id/nav_history"
+            android:icon="@drawable/ic_history"
+            android:title="Historique" />
+        <item
+            android:id="@+id/nav_profile"
+            android:icon="@drawable/ic_account"
+            android:title="Profil" />
+    </group>
+
+    <item android:title="Communauté">
+        <menu>
+            <item
+                android:id="@+id/nav_forum"
+                android:icon="@drawable/group"
+                android:title="Forum" />
+            <item
+                android:id="@+id/nav_chat"
+                android:icon="@drawable/ic_chat"
+                android:title="Chat" />
+        </menu>
+    </item>
+
+    <item android:title="Support">
+        <menu>
+            <item
+                android:id="@+id/nav_help"
+                android:icon="@drawable/support"
+                android:title="Aide" />
+            <item
+                android:id="@+id/nav_about"
+                android:icon="@drawable/ic_info"
+                android:title="À propos" />
+            <item
+                android:id="@+id/nav_settings"
+                android:icon="@drawable/ic_setting"
+                android:title="Paramètres" />
+        </menu>
+    </item>
+</menu>

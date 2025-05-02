@@ -117,19 +117,55 @@
                         android:textColorHint="#999999"
                         android:textSize="16sp" />
 
-
-                    <EditText
-                        android:id="@+id/input_phone"
+                    <!-- Champ du numéro de téléphone avec CountryCodePicker intégré -->
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:layout_marginBottom="12dp"
                         android:background="@drawable/edittext_background"
-                        android:hint="Entrez votre téléphone"
-                        android:inputType="phone"
+                        android:orientation="horizontal"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp">
+
+                        <com.hbb20.CountryCodePicker
+                            android:id="@+id/country_code_picker"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="center_vertical"
+                            app:ccp_defaultPhoneCode="212"
+                            app:ccp_showFlag="true"
+                            app:ccp_showNameCode="false"
+                            app:ccp_textSize="16sp"
+                            app:ccp_arrowSize="12dp"
+                            app:ccp_contentColor="#222222" />
+
+                        <EditText
+                            android:id="@+id/input_phone"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:background="@null"
+                            android:hint="Numéro de téléphone"
+                            android:inputType="phone"
+                            android:textColor="#222222"
+                            android:textColorHint="#999999"
+                            android:textSize="16sp" />
+                    </LinearLayout>
+
+                    <!-- Champ pour le code de vérification SMS (initialement invisible) -->
+                    <EditText
+                        android:id="@+id/input_verification_code"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginBottom="12dp"
+                        android:background="@drawable/edittext_background"
+                        android:hint="Entrez le code SMS"
+                        android:inputType="number"
                         android:padding="12dp"
                         android:textColor="#222222"
                         android:textColorHint="#999999"
-                        android:textSize="16sp" />
+                        android:textSize="16sp"
+                        android:visibility="gone" />
 
                     <EditText
                         android:id="@+id/input_password"
@@ -168,6 +204,20 @@
                         android:textColor="#FFFFFF"
                         android:textStyle="bold"
                         android:textSize="16sp" />
+
+                    <!-- Bouton pour vérifier le code SMS (initialement invisible) -->
+                    <Button
+                        android:id="@+id/btn_verify_code"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginBottom="16dp"
+                        android:background="@drawable/button_background"
+                        android:backgroundTint="@null"
+                        android:text="Vérifier le code"
+                        android:textColor="#FFFFFF"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:visibility="gone" />
 
                     <TextView
                         android:id="@+id/or_text"
@@ -253,4 +303,24 @@
                 android:textSize="14sp" />
         </LinearLayout>
     </ScrollView>
+
+    <!-- Superposition pour l'indicateur de chargement -->
+    <FrameLayout
+        android:id="@+id/loading_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#CCFFFFFF"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminateTint="#6B48FF"
+            style="?android:attr/progressBarStyleLarge" />
+    </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
