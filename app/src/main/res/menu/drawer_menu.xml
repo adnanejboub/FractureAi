@@ -3,38 +3,36 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="navigation_view">
 
+    <!-- Éléments visibles pour tous -->
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/nav_home"
             android:icon="@drawable/ic_home"
             android:title="Accueil" />
-        <item
-            android:id="@+id/nav_scan"
-            android:icon="@drawable/ic_scanner"
-            android:title="Scanner" />
+
+    </group>
+
+    <!-- Éléments visibles uniquement pour les utilisateurs authentifiés -->
+    <group
+        android:id="@+id/menu_group_authenticated"
+        android:checkableBehavior="single"
+        android:visible="false">
         <item
             android:id="@+id/nav_history"
             android:icon="@drawable/ic_history"
             android:title="Historique" />
         <item
             android:id="@+id/nav_profile"
-            android:icon="@drawable/ic_account"
+            android:icon="@drawable/ic_accountp"
             android:title="Profil" />
+        <item
+            android:id="@+id/nav_scan"
+            android:icon="@drawable/ic_scanner"
+            android:title="Scanner" />
     </group>
 
-    <item android:title="Communauté">
-        <menu>
-            <item
-                android:id="@+id/nav_forum"
-                android:icon="@drawable/group"
-                android:title="Forum" />
-            <item
-                android:id="@+id/nav_chat"
-                android:icon="@drawable/ic_chat"
-                android:title="Chat" />
-        </menu>
-    </item>
 
+    <!-- Sous-menu Support (visible pour tous) -->
     <item android:title="Support">
         <menu>
             <item
@@ -51,4 +49,22 @@
                 android:title="Paramètres" />
         </menu>
     </item>
+
+    <!-- Élément pour les utilisateurs non authentifiés -->
+    <group android:id="@+id/menu_group_unauthenticated">
+        <item
+            android:id="@+id/nav_login"
+            android:icon="@drawable/ic_account"
+            android:title="Connexion"
+            android:visible="true" />
+    </group>
+
+    <!-- Élément pour les utilisateurs authentifiés -->
+    <group android:id="@+id/menu_group_logout">
+        <item
+            android:id="@+id/nav_logout"
+            android:icon="@drawable/logout"
+            android:title="Déconnexion"
+            android:visible="false" />
+    </group>
 </menu>

@@ -5,7 +5,6 @@
     android:layout_height="match_parent"
     android:background="#F5F5F5">
 
-
     <ScrollView
         android:id="@+id/scroll_view"
         android:layout_width="match_parent"
@@ -23,8 +22,6 @@
             android:gravity="center_horizontal"
             android:padding="20dp"
             android:background="#F5F5F5">
-
-
 
             <ImageView
                 android:id="@+id/logo"
@@ -51,15 +48,12 @@
                     android:orientation="vertical"
                     android:padding="15dp">
 
-
                     <ImageView
                         android:id="@+id/success_icon"
                         android:layout_width="60dp"
                         android:layout_height="60dp"
                         android:layout_marginBottom="16dp"
-                        android:src="@drawable/ic_success"
-                       />
-
+                        android:src="@drawable/ic_success" />
 
                     <TextView
                         android:id="@+id/confirmation_title"
@@ -71,7 +65,6 @@
                         android:textColor="#6B48FF"
                         android:textSize="22sp"
                         android:textStyle="bold" />
-
 
                     <TextView
                         android:id="@+id/confirmation_message"
@@ -90,11 +83,10 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_horizontal"
                         android:layout_marginBottom="16dp"
-                        android:text="adnane@gmail.com"
+                        android:text="inconnu@example.com"
                         android:textColor="#6B48FF"
                         android:textSize="14sp"
                         android:textStyle="bold" />
-
 
                     <Button
                         android:id="@+id/btn_close"
