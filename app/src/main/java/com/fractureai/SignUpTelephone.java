@@ -1,6 +1,8 @@
 package com.fractureai;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -34,6 +36,7 @@ import com.google.firebase.auth.PhoneAuthProvider;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.auth.FacebookAuthProvider;
 import com.google.firebase.auth.UserProfileChangeRequest;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.hbb20.CountryCodePicker;
 import com.facebook.AccessToken;
 import com.facebook.CallbackManager;
@@ -43,12 +46,13 @@ import com.facebook.FacebookSdk;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class SignUpTelephone extends AppCompatActivity {
 
     private static final String TAG = "SignUpTelephone";
-    private static final int RC_SIGN_IN = 9001;
 
     private CountryCodePicker countryCodePicker;
     private EditText inputName, inputPhone, inputPassword, inputConfirmPassword;
@@ -58,8 +62,9 @@ public class SignUpTelephone extends AppCompatActivity {
     private LinearLayout btnGoogle, btnFacebook;
     private TextView loginText;
 
-    // Firebase Auth
+    // Firebase
     private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
     private PhoneAuthProvider.OnVerificationStateChangedCallbacks mCallbacks;
     private String mVerificationId;
     private PhoneAuthProvider.ForceResendingToken mResendToken;
@@ -74,28 +79,26 @@ public class SignUpTelephone extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Initialisation du SDK Facebook
         FacebookSdk.sdkInitialize(getApplicationContext());
-
         setContentView(R.layout.activity_sign_up_telephone);
 
-        // Initialiser Firebase Auth
+        // Initialize Firebase
         mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
 
-        // Initialiser les callbacks Phone Auth
+        // Initialize Phone Auth Callbacks
         setupPhoneAuthCallbacks();
 
-        // Configuration de Google Sign-In
+        // Configure Google Sign-In
         configureGoogleSignIn();
 
-        // Configuration de Facebook Login
+        // Configure Facebook Login
         configureFacebookLogin();
 
-        // Configuration des lanceurs d'activité
+        // Setup Activity Launchers
         setupActivityLaunchers();
 
-        // Initialisation des vues
+        // Initialize UI
         countryCodePicker = findViewById(R.id.country_code_picker);
         inputName = findViewById(R.id.input_name);
         inputPhone = findViewById(R.id.input_phone);
@@ -110,27 +113,24 @@ public class SignUpTelephone extends AppCompatActivity {
         logo_app = findViewById(R.id.logo);
         loginText = findViewById(R.id.login_text);
 
-        // Vérifier que les vues existent
+        // Verify UI elements
         if (countryCodePicker == null || inputName == null || inputPhone == null || inputPassword == null ||
                 inputConfirmPassword == null || btnRegister == null || btnEmail == null || btnPhone == null ||
                 loadingOverlay == null || btnGoogle == null || btnFacebook == null || logo_app == null ||
                 loginText == null) {
-            Log.e(TAG, "Une ou plusieurs vues n'existent pas");
+            Log.e(TAG, "One or more UI views are null");
             Toast.makeText(this, "Erreur d'initialisation de l'interface", Toast.LENGTH_LONG).show();
             finish();
             return;
         }
 
-        // Lier le CountryCodePicker au champ de saisie
+        // Link CountryCodePicker
         countryCodePicker.registerCarrierNumberEditText(inputPhone);
 
         // Setup click listeners
         setupClickListeners();
     }
 
-    /**
-     * Configure les options de connexion Google
-     */
     private void configureGoogleSignIn() {
         try {
             GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -139,18 +139,14 @@ public class SignUpTelephone extends AppCompatActivity {
                     .build();
             mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
         } catch (Exception e) {
-            Log.e(TAG, "Erreur lors de la configuration de Google Sign-In : " + e.getMessage(), e);
-            Toast.makeText(this, "Configuration Google Sign-In échouée. Contactez le support.", Toast.LENGTH_LONG).show();
+            Log.e(TAG, "Error configuring Google Sign-In: " + e.getMessage(), e);
+            Toast.makeText(this, "Échec de la configuration de Google Sign-In", Toast.LENGTH_LONG).show();
         }
     }
 
-    /**
-     * Configure la connexion Facebook
-     */
     private void configureFacebookLogin() {
         try {
             mCallbackManager = CallbackManager.Factory.create();
-
             LoginManager.getInstance().registerCallback(mCallbackManager,
                     new FacebookCallback<LoginResult>() {
                         @Override
@@ -161,31 +157,28 @@ public class SignUpTelephone extends AppCompatActivity {
 
                         @Override
                         public void onCancel() {
-                            loadingOverlay.setVisibility(View.GONE);
-                            Log.d(TAG, "facebook:onCancel");
-                            Toast.makeText(SignUpTelephone.this, "Connexion Facebook annulée",
-                                    Toast.LENGTH_SHORT).show();
+                            runOnUiThread(() -> {
+                                loadingOverlay.setVisibility(View.GONE);
+                                Log.d(TAG, "facebook:onCancel");
+                                Toast.makeText(SignUpTelephone.this, "Connexion Facebook annulée", Toast.LENGTH_SHORT).show();
+                            });
                         }
 
                         @Override
                         public void onError(FacebookException error) {
-                            loadingOverlay.setVisibility(View.GONE);
-                            Log.e(TAG, "facebook:onError", error);
-                            Toast.makeText(SignUpTelephone.this,
-                                    "Erreur de connexion Facebook: " + error.getMessage(),
-                                    Toast.LENGTH_LONG).show();
+                            runOnUiThread(() -> {
+                                loadingOverlay.setVisibility(View.GONE);
+                                Log.e(TAG, "facebook:onError", error);
+                                Toast.makeText(SignUpTelephone.this, "Erreur de connexion Facebook : " + error.getMessage(), Toast.LENGTH_LONG).show();
+                            });
                         }
                     });
         } catch (Exception e) {
-            Log.e(TAG, "Erreur lors de la configuration de Facebook Login : " + e.getMessage(), e);
-            Toast.makeText(this, "Configuration Facebook Login échouée. Contactez le support.",
-                    Toast.LENGTH_LONG).show();
+            Log.e(TAG, "Error configuring Facebook Login: " + e.getMessage(), e);
+            Toast.makeText(this, "Échec de la configuration de la connexion Facebook", Toast.LENGTH_LONG).show();
         }
     }
 
-    /**
-     * Configure les lanceurs d'activité
-     */
     private void setupActivityLaunchers() {
         googleSignInLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -194,88 +187,91 @@ public class SignUpTelephone extends AppCompatActivity {
                         Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
                         handleGoogleSignInResult(task);
                     } else {
-                        loadingOverlay.setVisibility(View.GONE);
-                        Log.d(TAG, "Google Sign-In: L'utilisateur a annulé la connexion ou une erreur s'est produite");
-                        Toast.makeText(this, "La connexion avec Google n'a pas pu être complétée. Veuillez réessayer.",
-                                Toast.LENGTH_SHORT).show();
+                        runOnUiThread(() -> {
+                            loadingOverlay.setVisibility(View.GONE);
+                            Log.d(TAG, "Google Sign-In cancelled or failed");
+                            Toast.makeText(this, "Échec de la connexion Google. Veuillez réessayer.", Toast.LENGTH_SHORT).show();
+                        });
                     }
                 }
         );
     }
 
-    /**
-     * Gère le résultat de la connexion Google
-     */
     private void handleGoogleSignInResult(Task<GoogleSignInAccount> completedTask) {
         try {
             GoogleSignInAccount account = completedTask.getResult(ApiException.class);
             if (account != null) {
                 String idToken = account.getIdToken();
                 if (idToken != null) {
-                    firebaseAuthWithGoogle(idToken);
+                    firebaseAuthWithGoogle(idToken, account.getDisplayName(), account.getEmail());
                 } else {
-                    loadingOverlay.setVisibility(View.GONE);
-                    Log.e(TAG, "Google Sign-In: ID token null");
-                    Toast.makeText(this, "Erreur d'authentification Google. Veuillez réessayer.",
-                            Toast.LENGTH_LONG).show();
+                    runOnUiThread(() -> {
+                        loadingOverlay.setVisibility(View.GONE);
+                        Log.e(TAG, "Google Sign-In: ID token null");
+                        Toast.makeText(this, "Erreur d'authentification Google. Veuillez réessayer.", Toast.LENGTH_LONG).show();
+                    });
                 }
             }
         } catch (ApiException e) {
-            loadingOverlay.setVisibility(View.GONE);
-            Log.e(TAG, "Google Sign-In a échoué avec le code: " + e.getStatusCode(), e);
-
-            String errorMessage;
-            switch (e.getStatusCode()) {
-                case 12500:
-                    errorMessage = "La connexion Google a été annulée";
-                    break;
-                case 12501:
-                    errorMessage = "La connexion Google a échoué. Vérifiez votre connexion internet";
-                    break;
-                case 12502:
-                    errorMessage = "Une connexion Google est déjà en cours";
-                    break;
-                default:
-                    errorMessage = "Erreur Google Sign-In (code " + e.getStatusCode() + ")";
-            }
-            Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+            runOnUiThread(() -> {
+                loadingOverlay.setVisibility(View.GONE);
+                Log.e(TAG, "Google Sign-In failed with code: " + e.getStatusCode(), e);
+                String errorMessage;
+                switch (e.getStatusCode()) {
+                    case 12500:
+                        errorMessage = "Connexion Google annulée";
+                        break;
+                    case 12501:
+                        errorMessage = "Échec de la connexion Google. Vérifiez votre connexion Internet.";
+                        break;
+                    case 12502:
+                        errorMessage = "Connexion Google déjà en cours";
+                        break;
+                    default:
+                        errorMessage = "Erreur de connexion Google (code " + e.getStatusCode() + ")";
+                }
+                Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+            });
         }
     }
 
-    /**
-     * Configure les callbacks pour l'authentification par téléphone Firebase
-     */
     private void setupPhoneAuthCallbacks() {
         mCallbacks = new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
             @Override
             public void onVerificationCompleted(@NonNull PhoneAuthCredential credential) {
                 Log.d(TAG, "onVerificationCompleted:" + credential);
-                Toast.makeText(SignUpTelephone.this, "Vérification automatique réussie", Toast.LENGTH_SHORT).show();
-                loadingOverlay.setVisibility(View.GONE);
-                btnRegister.setVisibility(View.VISIBLE);
-                signInWithCredential(credential, inputName.getText().toString().trim(), inputPassword.getText().toString().trim());
+                runOnUiThread(() -> {
+                    Toast.makeText(SignUpTelephone.this, "Vérification automatique réussie", Toast.LENGTH_SHORT).show();
+                    loadingOverlay.setVisibility(View.GONE);
+                    btnRegister.setVisibility(View.VISIBLE);
+                });
+                signInWithCredential(credential);
             }
 
             @Override
             public void onVerificationFailed(@NonNull FirebaseException e) {
-                Log.w(TAG, "onVerificationFailed", e);
-                loadingOverlay.setVisibility(View.GONE);
-                btnRegister.setVisibility(View.VISIBLE);
-
-                if (e instanceof FirebaseAuthInvalidCredentialsException) {
-                    inputPhone.setError("Numéro de téléphone invalide");
-                } else if (e instanceof FirebaseTooManyRequestsException) {
-                    Toast.makeText(SignUpTelephone.this, "Trop de tentatives, veuillez réessayer plus tard", Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(SignUpTelephone.this, "Erreur de vérification : " + e.getMessage(), Toast.LENGTH_LONG).show();
-                }
+                runOnUiThread(() -> {
+                    Log.w(TAG, "onVerificationFailed", e);
+                    loadingOverlay.setVisibility(View.GONE);
+                    btnRegister.setVisibility(View.VISIBLE);
+                    if (e instanceof FirebaseAuthInvalidCredentialsException) {
+                        inputPhone.setError("Numéro de téléphone invalide");
+                    } else if (e instanceof FirebaseTooManyRequestsException) {
+                        Toast.makeText(SignUpTelephone.this, "Trop de tentatives, réessayez plus tard", Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(SignUpTelephone.this, "Erreur de vérification : " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
             }
 
             @Override
             public void onCodeSent(@NonNull String verificationId, @NonNull PhoneAuthProvider.ForceResendingToken token) {
                 Log.d(TAG, "onCodeSent:" + verificationId);
-                loadingOverlay.setVisibility(View.GONE);
-                btnRegister.setVisibility(View.VISIBLE);
+                runOnUiThread(() -> {
+                    loadingOverlay.setVisibility(View.GONE);
+                    btnRegister.setVisibility(View.VISIBLE);
+                    Toast.makeText(SignUpTelephone.this, "Code de vérification envoyé", Toast.LENGTH_SHORT).show();
+                });
                 mVerificationId = verificationId;
                 mResendToken = token;
                 redirectToVerifyCode(verificationId, countryCodePicker.getFullNumberWithPlus());
@@ -283,13 +279,8 @@ public class SignUpTelephone extends AppCompatActivity {
         };
     }
 
-    /**
-     * Valide les champs et lance le processus d'inscription
-     */
     private void validateAndProceed() {
-        // Masquer le clavier (si nécessaire)
         hideKeyboard();
-
         String name = inputName.getText().toString().trim();
         String phoneNumber = countryCodePicker.getFullNumberWithPlus();
         String password = inputPassword.getText().toString();
@@ -320,18 +311,17 @@ public class SignUpTelephone extends AppCompatActivity {
             return;
         }
 
+        if (!isNetworkConnected()) {
+            Toast.makeText(this, "Vérifiez votre connexion Internet et réessayez", Toast.LENGTH_LONG).show();
+            return;
+        }
+
         btnRegister.setVisibility(View.INVISIBLE);
         loadingOverlay.setVisibility(View.VISIBLE);
-        startPhoneNumberVerification(phoneNumber, name, password);
+        startPhoneNumberVerification(phoneNumber);
     }
 
-    /**
-     * Démarre la vérification du numéro de téléphone avec Firebase
-     * @param phoneNumber Numéro de téléphone avec code pays
-     * @param name Nom de l'utilisateur
-     * @param password Mot de passe
-     */
-    private void startPhoneNumberVerification(String phoneNumber, String name, String password) {
+    private void startPhoneNumberVerification(String phoneNumber) {
         PhoneAuthOptions options = PhoneAuthOptions.newBuilder(mAuth)
                 .setPhoneNumber(phoneNumber)
                 .setTimeout(60L, TimeUnit.SECONDS)
@@ -341,11 +331,6 @@ public class SignUpTelephone extends AppCompatActivity {
         PhoneAuthProvider.verifyPhoneNumber(options);
     }
 
-    /**
-     * Redirige vers l'écran de vérification du code
-     * @param verificationId ID de vérification Firebase
-     * @param phoneNumber Numéro de téléphone complet
-     */
     private void redirectToVerifyCode(String verificationId, String phoneNumber) {
         Intent intent = new Intent(SignUpTelephone.this, VerifyCode.class);
         intent.putExtra("VERIFICATION_ID", verificationId);
@@ -355,13 +340,7 @@ public class SignUpTelephone extends AppCompatActivity {
         startActivity(intent);
     }
 
-    /**
-     * Connecte l'utilisateur avec les credentials Firebase et met à jour le profil
-     * @param credential Credentials d'authentification
-     * @param name Nom de l'utilisateur
-     * @param password Mot de passe
-     */
-    private void signInWithCredential(PhoneAuthCredential credential, String name, String password) {
+    private void signInWithCredential(PhoneAuthCredential credential) {
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
@@ -369,179 +348,148 @@ public class SignUpTelephone extends AppCompatActivity {
                         boolean isNewUser = task.getResult().getAdditionalUserInfo() != null && task.getResult().getAdditionalUserInfo().isNewUser();
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null) {
-                            UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
-                                    .setDisplayName(name)
-                                    .build();
-                            user.updateProfile(profileUpdates)
-                                    .addOnCompleteListener(profileTask -> {
-                                        if (profileTask.isSuccessful()) {
-                                            Log.d(TAG, "User profile updated.");
-                                            user.updatePassword(password)
-                                                    .addOnCompleteListener(passwordTask -> {
-                                                        loadingOverlay.setVisibility(View.GONE);
-                                                        if (passwordTask.isSuccessful()) {
-                                                            Log.d(TAG, "Password updated.");
-                                                            Toast.makeText(SignUpTelephone.this, "Inscription réussie !", Toast.LENGTH_SHORT).show();
-                                                            if (isNewUser) {
-                                                                redirectToProfileActivity();
-                                                            } else {
-                                                                redirectToMainActivity();
-                                                            }
-                                                        } else {
-                                                            btnRegister.setVisibility(View.VISIBLE);
-                                                            Log.w(TAG, "Password update failed", passwordTask.getException());
-                                                            Toast.makeText(SignUpTelephone.this, "Erreur lors de la mise à jour du mot de passe", Toast.LENGTH_SHORT).show();
-                                                            mAuth.signOut();
-                                                        }
-                                                    });
-                                        } else {
-                                            btnRegister.setVisibility(View.VISIBLE);
-                                            loadingOverlay.setVisibility(View.GONE);
-                                            Log.w(TAG, "User profile update failed", profileTask.getException());
-                                            Toast.makeText(SignUpTelephone.this, "Erreur lors de la mise à jour du profil", Toast.LENGTH_SHORT).show();
-                                            mAuth.signOut();
-                                        }
-                                    });
+                            // Data should be handled in VerifyCode activity
+                            if (isNewUser) {
+                                redirectToProfileActivity();
+                            } else {
+                                redirectToMainActivity();
+                            }
                         }
                     } else {
-                        btnRegister.setVisibility(View.VISIBLE);
-                        loadingOverlay.setVisibility(View.GONE);
-                        Log.w(TAG, "signInWithCredential:failure", task.getException());
-                        if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
-                            Toast.makeText(SignUpTelephone.this, "Erreur d'authentification. Veuillez réessayer.", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(SignUpTelephone.this, "Erreur : " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                        }
+                        runOnUiThread(() -> {
+                            loadingOverlay.setVisibility(View.GONE);
+                            btnRegister.setVisibility(View.VISIBLE);
+                            Log.w(TAG, "signInWithCredential:failure", task.getException());
+                            String message = task.getException() != null ? task.getException().getMessage() : "Erreur inconnue";
+                            Toast.makeText(SignUpTelephone.this, "Échec de l'authentification : " + message, Toast.LENGTH_LONG).show();
+                        });
                     }
                 });
     }
 
-    /**
-     * Méthode pour la connexion avec Google
-     */
     private void signInWithGoogle() {
         mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
-            loadingOverlay.setVisibility(View.VISIBLE);
-
             if (!isNetworkConnected()) {
-                loadingOverlay.setVisibility(View.GONE);
-                Toast.makeText(this, "Vérifiez votre connexion internet et réessayez", Toast.LENGTH_LONG).show();
+                runOnUiThread(() -> {
+                    loadingOverlay.setVisibility(View.GONE);
+                    Toast.makeText(this, "Vérifiez votre connexion Internet et réessayez", Toast.LENGTH_LONG).show();
+                });
                 return;
             }
-
+            loadingOverlay.setVisibility(View.VISIBLE);
             try {
                 Intent signInIntent = mGoogleSignInClient.getSignInIntent();
                 googleSignInLauncher.launch(signInIntent);
             } catch (Exception e) {
-                loadingOverlay.setVisibility(View.GONE);
-                Log.e(TAG, "Erreur lors du lancement de Google Sign-In: " + e.getMessage(), e);
-                Toast.makeText(this, "Impossible de lancer la connexion Google. Veuillez réessayer", Toast.LENGTH_LONG).show();
+                runOnUiThread(() -> {
+                    loadingOverlay.setVisibility(View.GONE);
+                    Log.e(TAG, "Error launching Google Sign-In: " + e.getMessage(), e);
+                    Toast.makeText(this, "Échec du lancement de Google Sign-In", Toast.LENGTH_LONG).show();
+                });
             }
         });
     }
 
-    /**
-     * Authentifie l'utilisateur avec Google
-     * @param idToken Jeton d'identification Google
-     */
-    private void firebaseAuthWithGoogle(String idToken) {
+    private void firebaseAuthWithGoogle(String idToken, String name, String email) {
         Log.d(TAG, "firebaseAuthWithGoogle:" + idToken.substring(0, Math.min(10, idToken.length())) + "...");
-
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
-                    loadingOverlay.setVisibility(View.GONE);
-                    if (task.isSuccessful()) {
-                        Log.d(TAG, "signInWithCredential:success");
-                        FirebaseUser user = mAuth.getCurrentUser();
-                        if (user != null) {
-                            boolean isNewUser = task.getResult().getAdditionalUserInfo() != null && task.getResult().getAdditionalUserInfo().isNewUser();
-                            Toast.makeText(this, "Connexion Google réussie !", Toast.LENGTH_SHORT).show();
-                            if (isNewUser) {
-                                updateProfileAndRedirect(user, inputName.getText().toString().trim(), inputPassword.getText().toString().trim());
-                            } else {
-                                redirectToMainActivity();
+                    runOnUiThread(() -> {
+                        loadingOverlay.setVisibility(View.GONE);
+                        if (task.isSuccessful()) {
+                            Log.d(TAG, "signInWithCredential:success");
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            if (user != null) {
+                                boolean isNewUser = task.getResult().getAdditionalUserInfo() != null && task.getResult().getAdditionalUserInfo().isNewUser();
+                                if (isNetworkConnected()) {
+                                    saveUserToFirestore(user.getUid(), name != null ? name : inputName.getText().toString().trim(),
+                                            email != null ? email : "", "", "", "");
+                                    Toast.makeText(this, "Connexion Google réussie !", Toast.LENGTH_SHORT).show();
+                                    if (isNewUser) {
+                                        updateProfileAndRedirect(user, inputName.getText().toString().trim(), inputPassword.getText().toString().trim());
+                                    } else {
+                                        redirectToMainActivity();
+                                    }
+                                } else {
+                                    Toast.makeText(this, "Aucune connexion Internet. Données non enregistrées.", Toast.LENGTH_LONG).show();
+                                    mAuth.signOut();
+                                }
                             }
+                        } else {
+                            Log.e(TAG, "signInWithCredential:failure", task.getException());
+                            String message = task.getException() != null ? task.getException().getMessage() : "Erreur inconnue";
+                            Toast.makeText(this, "Échec de la connexion Google : " + message, Toast.LENGTH_LONG).show();
                         }
-                    } else {
-                        Log.e(TAG, "signInWithCredential:failure", task.getException());
-                        String errorMessage = "Erreur d'authentification Google";
-                        if (task.getException() != null) {
-                            errorMessage += ": " + task.getException().getMessage();
-                        }
-                        Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
-                    }
+                    });
                 });
     }
 
-    /**
-     * Méthode pour la connexion avec Facebook
-     */
     private void signInWithFacebook() {
-        loadingOverlay.setVisibility(View.VISIBLE);
-
         if (!isNetworkConnected()) {
-            loadingOverlay.setVisibility(View.GONE);
-            Toast.makeText(this, "Vérifiez votre connexion internet et réessayez", Toast.LENGTH_LONG).show();
+            runOnUiThread(() -> {
+                loadingOverlay.setVisibility(View.GONE);
+                Toast.makeText(this, "Vérifiez votre connexion Internet et réessayez", Toast.LENGTH_LONG).show();
+            });
             return;
         }
-
+        loadingOverlay.setVisibility(View.VISIBLE);
         try {
             LoginManager.getInstance().logOut();
-            LoginManager.getInstance().logInWithReadPermissions(
-                    this,
-                    Arrays.asList("email", "public_profile")
-            );
+            LoginManager.getInstance().logInWithReadPermissions(this, Arrays.asList("email", "public_profile"));
         } catch (Exception e) {
-            loadingOverlay.setVisibility(View.GONE);
-            Log.e(TAG, "Erreur lors du lancement de Facebook Login: " + e.getMessage(), e);
-            Toast.makeText(this, "Impossible de lancer la connexion Facebook. Veuillez réessayer", Toast.LENGTH_LONG).show();
+            runOnUiThread(() -> {
+                loadingOverlay.setVisibility(View.GONE);
+                Log.e(TAG, "Error launching Facebook Login: " + e.getMessage(), e);
+                Toast.makeText(this, "Échec du lancement de la connexion Facebook", Toast.LENGTH_LONG).show();
+            });
         }
     }
 
-    /**
-     * Traite le jeton d'accès Facebook et authentifie l'utilisateur avec Firebase
-     * @param token Jeton d'accès Facebook
-     */
     private void handleFacebookAccessToken(AccessToken token) {
         Log.d(TAG, "handleFacebookAccessToken:" + token);
-
         AuthCredential credential = FacebookAuthProvider.getCredential(token.getToken());
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
-                    loadingOverlay.setVisibility(View.GONE);
-                    if (task.isSuccessful()) {
-                        Log.d(TAG, "signInWithCredential:success");
-                        FirebaseUser user = mAuth.getCurrentUser();
-                        if (user != null) {
-                            boolean isNewUser = task.getResult().getAdditionalUserInfo() != null && task.getResult().getAdditionalUserInfo().isNewUser();
-                            Toast.makeText(this, "Connexion Facebook réussie !", Toast.LENGTH_SHORT).show();
-                            if (isNewUser) {
-                                updateProfileAndRedirect(user, inputName.getText().toString().trim(), inputPassword.getText().toString().trim());
-                            } else {
-                                redirectToMainActivity();
+                    runOnUiThread(() -> {
+                        loadingOverlay.setVisibility(View.GONE);
+                        if (task.isSuccessful()) {
+                            Log.d(TAG, "signInWithCredential:success");
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            if (user != null) {
+                                boolean isNewUser = task.getResult().getAdditionalUserInfo() != null && task.getResult().getAdditionalUserInfo().isNewUser();
+                                if (isNetworkConnected()) {
+                                    saveUserToFirestore(user.getUid(),
+                                            user.getDisplayName() != null ? user.getDisplayName() : inputName.getText().toString().trim(),
+                                            user.getEmail() != null ? user.getEmail() : "", "", "", "");
+                                    Toast.makeText(this, "Connexion Facebook réussie !", Toast.LENGTH_SHORT).show();
+                                    if (isNewUser) {
+                                        updateProfileAndRedirect(user, inputName.getText().toString().trim(), inputPassword.getText().toString().trim());
+                                    } else {
+                                        redirectToMainActivity();
+                                    }
+                                } else {
+                                    Toast.makeText(this, "Aucune connexion Internet. Données non enregistrées.", Toast.LENGTH_LONG).show();
+                                    mAuth.signOut();
+                                }
                             }
+                        } else {
+                            Log.w(TAG, "signInWithCredential:failure", task.getException());
+                            String errorMessage = "Échec de la connexion Facebook";
+                            if (task.getException() != null) {
+                                if (task.getException().getMessage().contains("email address is already")) {
+                                    errorMessage = "Un compte existe déjà avec cet email. Veuillez vous connecter avec cette méthode.";
+                                } else {
+                                    errorMessage += " : " + task.getException().getMessage();
+                                }
+                            }
+                            Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+                            LoginManager.getInstance().logOut();
                         }
-                    } else {
-                        Log.w(TAG, "signInWithCredential:failure", task.getException());
-                        String errorMessage = "Échec de l'authentification Facebook";
-                        if (task.getException() != null && task.getException().getMessage().contains("email address is already")) {
-                            errorMessage = "Un compte existe déjà avec cette adresse e-mail. Veuillez vous connecter avec cette méthode.";
-                        } else if (task.getException() != null) {
-                            errorMessage += ": " + task.getException().getMessage();
-                        }
-                        Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
-                        LoginManager.getInstance().logOut();
-                    }
+                    });
                 });
     }
 
-    /**
-     * Met à jour le profil et redirige l'utilisateur
-     * @param user Utilisateur Firebase
-     * @param name Nom de l'utilisateur
-     * @param password Mot de passe
-     */
     private void updateProfileAndRedirect(FirebaseUser user, String name, String password) {
         UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
                 .setDisplayName(name)
@@ -556,22 +504,48 @@ public class SignUpTelephone extends AppCompatActivity {
                                         Log.d(TAG, "Password updated.");
                                         redirectToProfileActivity();
                                     } else {
-                                        Log.w(TAG, "Password update failed", passwordTask.getException());
-                                        Toast.makeText(this, "Erreur lors de la mise à jour du mot de passe", Toast.LENGTH_SHORT).show();
+                                        runOnUiThread(() -> {
+                                            Log.w(TAG, "Password update failed", passwordTask.getException());
+                                            Toast.makeText(this, "Échec de la mise à jour du mot de passe : " + passwordTask.getException().getMessage(), Toast.LENGTH_LONG).show();
+                                        });
                                         mAuth.signOut();
                                     }
                                 });
                     } else {
-                        Log.w(TAG, "User profile update failed", profileTask.getException());
-                        Toast.makeText(this, "Erreur lors de la mise à jour du profil", Toast.LENGTH_SHORT).show();
+                        runOnUiThread(() -> {
+                            Log.w(TAG, "User profile update failed", profileTask.getException());
+                            Toast.makeText(this, "Échec de la mise à jour du profil : " + profileTask.getException().getMessage(), Toast.LENGTH_LONG).show();
+                        });
                         mAuth.signOut();
                     }
                 });
     }
 
-    /**
-     * Redirige vers l'activité principale
-     */
+    private void saveUserToFirestore(String uid, String name, String email, String phone, String address, String city) {
+        Log.d(TAG, "Attempting to save user to Firestore: uid=" + uid + ", name=" + name + ", email=" + email + ", phone=" + phone);
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("uid", uid);
+        userData.put("name", name);
+        userData.put("email", email);
+        userData.put("phone", phone);
+        userData.put("address", address);
+        userData.put("city", city);
+        userData.put("profilePicture", "");
+        userData.put("createdAt", System.currentTimeMillis());
+
+        db.collection("users").document(uid)
+                .set(userData)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "User data successfully saved to Firestore for UID: " + uid);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to save user data to Firestore for UID: " + uid + ", Error: " + e.getMessage(), e);
+                    runOnUiThread(() -> {
+                        Toast.makeText(SignUpTelephone.this, "Échec de l'enregistrement des données : " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    });
+                });
+    }
+
     private void redirectToMainActivity() {
         Intent intent = new Intent(SignUpTelephone.this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -579,9 +553,6 @@ public class SignUpTelephone extends AppCompatActivity {
         finish();
     }
 
-    /**
-     * Redirige vers l'activité de profil
-     */
     private void redirectToProfileActivity() {
         Intent intent = new Intent(SignUpTelephone.this, Profil.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -589,17 +560,11 @@ public class SignUpTelephone extends AppCompatActivity {
         finish();
     }
 
-    /**
-     * Vérifie si l'appareil est connecté à internet
-     */
     private boolean isNetworkConnected() {
-        android.net.ConnectivityManager cm = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         return cm != null && cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected();
     }
 
-    /**
-     * Masque le clavier virtuel
-     */
     private void hideKeyboard() {
         View view = this.getCurrentFocus();
         if (view != null) {
@@ -617,15 +582,12 @@ public class SignUpTelephone extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    /**
-     * Setup click listeners for UI elements
-     */
     private void setupClickListeners() {
         logo_app.setOnClickListener(v -> {
             try {
                 startActivity(new Intent(SignUpTelephone.this, MainActivity.class));
             } catch (Exception e) {
-                Log.e(TAG, "Erreur lors du démarrage de l'activité MainActivity : " + e.getMessage());
+                Log.e(TAG, "Error starting MainActivity: " + e.getMessage());
             }
         });
 
@@ -635,10 +597,9 @@ public class SignUpTelephone extends AppCompatActivity {
                 btnEmail.setTextColor(getResources().getColor(android.R.color.white));
                 btnPhone.setBackgroundResource(R.drawable.toggle_background_unselected);
                 btnPhone.setTextColor(getResources().getColor(R.color.purple));
-                Intent intent = new Intent(SignUpTelephone.this, SignUpEmail.class);
-                startActivity(intent);
+                startActivity(new Intent(SignUpTelephone.this, SignUpEmail.class));
             } catch (Exception e) {
-                Log.e(TAG, "Erreur lors du démarrage de l'activité SignUpEmail : " + e.getMessage());
+                Log.e(TAG, "Error starting SignUpEmail: " + e.getMessage());
             }
         });
 
@@ -653,7 +614,7 @@ public class SignUpTelephone extends AppCompatActivity {
             try {
                 startActivity(new Intent(SignUpTelephone.this, SignIn.class));
             } catch (Exception e) {
-                Log.e(TAG, "Erreur lors du démarrage de l'activité SignIn : " + e.getMessage());
+                Log.e(TAG, "Error starting SignIn: " + e.getMessage());
             }
         });
 

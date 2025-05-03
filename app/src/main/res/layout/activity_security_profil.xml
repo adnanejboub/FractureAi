@@ -30,7 +30,8 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="24dp"
                 android:adjustViewBounds="true"
-                android:src="@drawable/logo_app" />
+                android:src="@drawable/logo_app"
+                android:contentDescription="Logo de l'application" />
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/security_container"
@@ -38,7 +39,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:elevation="8dp"
-                app:cardBackgroundColor="#F5F5F5"
+                app:cardBackgroundColor="#FFFFFF"
                 app:cardCornerRadius="16dp">
 
                 <LinearLayout
@@ -46,6 +47,38 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
+
+                    <FrameLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginBottom="16dp">
+
+                        <androidx.cardview.widget.CardView
+                            android:id="@+id/profile_pic_container"
+                            android:layout_width="120dp"
+                            android:layout_height="120dp"
+                            app:cardCornerRadius="60dp"
+                            app:cardElevation="0dp">
+
+                            <ImageView
+                                android:id="@+id/profile_picture"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:scaleType="centerCrop"
+                                android:src="@drawable/ic_profil"
+                                android:contentDescription="Photo de profil de l'utilisateur" />
+                        </androidx.cardview.widget.CardView>
+
+                        <ProgressBar
+                            android:id="@+id/upload_progress"
+                            android:layout_width="120dp"
+                            android:layout_height="120dp"
+                            android:layout_gravity="center"
+                            android:visibility="gone"
+                            style="?android:attr/progressBarStyle"
+                            android:contentDescription="Progression du téléchargement de la photo" />
+                    </FrameLayout>
 
                     <LinearLayout
                         android:id="@+id/profile_tabs"
@@ -64,9 +97,10 @@
                             android:layout_weight="1"
                             android:background="@drawable/toggle_background_unselected"
                             android:text="Informations Personnelles"
-                            android:textColor="@color/purple"
+                            android:textColor="#666666"
                             android:textSize="14sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            android:contentDescription="Afficher les informations personnelles" />
 
                         <Button
                             android:id="@+id/btn_securite"
@@ -77,7 +111,8 @@
                             android:text="Sécurité"
                             android:textColor="#FFFFFF"
                             android:textSize="14sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            android:contentDescription="Afficher les paramètres de sécurité" />
                     </LinearLayout>
 
                     <TextView
@@ -86,11 +121,12 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
                         android:text="Changement de mot de passe"
-                        android:textColor="#666666"
+                        android:textColor="#222222"
                         android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:contentDescription="Titre de la section de changement de mot de passe" />
 
-                    <!-- Current Password -->
+                    <!-- Champ pour le mot de passe actuel -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -103,7 +139,8 @@
                             android:layout_height="wrap_content"
                             android:text="Mot de passe actuel"
                             android:textColor="#666666"
-                            android:textSize="14sp" />
+                            android:textSize="14sp"
+                            android:contentDescription="Label pour le champ du mot de passe actuel" />
 
                         <EditText
                             android:id="@+id/input_current_password"
@@ -116,10 +153,11 @@
                             android:padding="12dp"
                             android:textColor="#222222"
                             android:textColorHint="#999999"
-                            android:textSize="16sp" />
+                            android:textSize="16sp"
+                            android:contentDescription="Champ pour entrer le mot de passe actuel" />
                     </LinearLayout>
 
-                    <!-- New Password -->
+                    <!-- Champ pour le nouveau mot de passe -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -132,7 +170,8 @@
                             android:layout_height="wrap_content"
                             android:text="Nouveau mot de passe"
                             android:textColor="#666666"
-                            android:textSize="14sp" />
+                            android:textSize="14sp"
+                            android:contentDescription="Label pour le champ du nouveau mot de passe" />
 
                         <EditText
                             android:id="@+id/input_new_password"
@@ -145,10 +184,11 @@
                             android:padding="12dp"
                             android:textColor="#222222"
                             android:textColorHint="#999999"
-                            android:textSize="16sp" />
+                            android:textSize="16sp"
+                            android:contentDescription="Champ pour entrer le nouveau mot de passe" />
                     </LinearLayout>
 
-                    <!-- Confirm New Password -->
+                    <!-- Champ pour confirmer le nouveau mot de passe -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -161,7 +201,8 @@
                             android:layout_height="wrap_content"
                             android:text="Confirmer le nouveau mot de passe"
                             android:textColor="#666666"
-                            android:textSize="14sp" />
+                            android:textSize="14sp"
+                            android:contentDescription="Label pour le champ de confirmation du mot de passe" />
 
                         <EditText
                             android:id="@+id/input_confirm_password"
@@ -174,20 +215,66 @@
                             android:padding="12dp"
                             android:textColor="#222222"
                             android:textColorHint="#999999"
-                            android:textSize="16sp" />
+                            android:textSize="16sp"
+                            android:contentDescription="Champ pour confirmer le nouveau mot de passe" />
                     </LinearLayout>
 
-                    <Button
-                        android:id="@+id/btn_update_password"
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:background="@drawable/button_background"
-                        android:text="Mettre à jour le mot de passe"
-                        android:textColor="#FFFFFF"
-                        android:textStyle="bold"
-                        android:textSize="16sp" />
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center">
+
+                        <Button
+                            android:id="@+id/btn_update_password"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/button_background"
+                            android:text="Modifier"
+                            android:textColor="#FFFFFF"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:contentDescription="Enregistrer le nouveau mot de passe" />
+
+                        <Button
+                            android:id="@+id/btn_cancel"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/toggle_background_unselected"
+                            android:text="Annuler"
+                            android:textColor="#222222"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:contentDescription="Annuler la modification du mot de passe" />
+                    </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
         </LinearLayout>
     </ScrollView>
+
+    <!-- Overlay de chargement avec fond semi-transparent -->
+    <FrameLayout
+        android:id="@+id/loading_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80FFFFFF"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_gravity="center"
+            android:indeterminateTint="@color/purple"
+            style="?android:attr/progressBarStyle"
+            android:contentDescription="Progression de la mise à jour du mot de passe" />
+    </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

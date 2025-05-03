@@ -30,7 +30,8 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="24dp"
                 android:adjustViewBounds="true"
-                android:src="@drawable/logo_app" />
+                android:src="@drawable/logo_app"
+                android:contentDescription="Logo de l'application" />
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/profile_container"
@@ -38,7 +39,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:elevation="8dp"
-                app:cardBackgroundColor="#F5F5F5"
+                app:cardBackgroundColor="#FFFFFF"
                 app:cardCornerRadius="16dp">
 
                 <LinearLayout
@@ -47,35 +48,58 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <LinearLayout
+                    <FrameLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center"
                         android:layout_gravity="center_horizontal"
                         android:layout_marginBottom="16dp">
 
-                        <FrameLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content">
+                        <androidx.cardview.widget.CardView
+                            android:id="@+id/profile_pic_container"
+                            android:layout_width="120dp"
+                            android:layout_height="120dp"
+                            app:cardCornerRadius="60dp"
+                            app:cardElevation="0dp">
 
                             <ImageView
                                 android:id="@+id/profile_picture"
-                                android:layout_width="100dp"
-                                android:layout_height="100dp"
-                                android:background="@drawable/profil_background"
-                                android:src="@drawable/ic_profil" />
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:scaleType="centerCrop"
+                                android:src="@drawable/ic_profil"
+                                android:contentDescription="Photo de profil de l'utilisateur" />
+                        </androidx.cardview.widget.CardView>
 
-                            <ImageView
-                                android:id="@+id/btn_upload"
-                                android:layout_width="32dp"
-                                android:layout_height="32dp"
-                                android:layout_gravity="bottom|end"
-                                android:background="@drawable/ic_upload"
-                                android:src="@drawable/upload"
-                                android:padding="6dp" />
-                        </FrameLayout>
-                    </LinearLayout>
+                        <ImageView
+                            android:id="@+id/btn_upload"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_gravity="bottom|end"
+                            android:background="@drawable/button_upload"
+                            android:src="@drawable/upload"
+                            android:padding="8dp"
+                            android:contentDescription="Télécharger une nouvelle photo de profil" />
+
+                        <ImageView
+                            android:id="@+id/btn_delete_photo"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_gravity="top|end"
+                            android:background="@drawable/circle_background"
+                            android:src="@drawable/ic_delete"
+                            android:padding="8dp"
+                            android:visibility="gone"
+                            android:contentDescription="Supprimer la photo de profil actuelle" />
+
+                        <ProgressBar
+                            android:id="@+id/upload_progress"
+                            android:layout_width="120dp"
+                            android:layout_height="120dp"
+                            android:layout_gravity="center"
+                            android:visibility="gone"
+                            style="?android:attr/progressBarStyle"
+                            android:contentDescription="Progression du téléchargement de la photo" />
+                    </FrameLayout>
 
                     <LinearLayout
                         android:id="@+id/profile_tabs"
@@ -96,7 +120,8 @@
                             android:text="Informations Personnelles"
                             android:textColor="#FFFFFF"
                             android:textSize="14sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            android:contentDescription="Afficher les informations personnelles" />
 
                         <Button
                             android:id="@+id/btn_securite"
@@ -107,7 +132,8 @@
                             android:text="Sécurité"
                             android:textColor="#666666"
                             android:textSize="14sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            android:contentDescription="Afficher les paramètres de sécurité" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -122,7 +148,8 @@
                             android:layout_height="wrap_content"
                             android:text="Nom Complet"
                             android:textColor="#666666"
-                            android:textSize="14sp" />
+                            android:textSize="14sp"
+                            android:contentDescription="Label pour le champ du nom complet" />
 
                         <EditText
                             android:id="@+id/input_name"
@@ -130,15 +157,15 @@
                             android:layout_height="48dp"
                             android:layout_marginTop="4dp"
                             android:background="@drawable/edittext_background"
-                            android:hint="Adnane Jboub"
+                            android:hint="Entrez votre nom complet"
                             android:inputType="textPersonName"
                             android:padding="12dp"
                             android:textColor="#222222"
                             android:textColorHint="#999999"
-                            android:textSize="16sp" />
+                            android:textSize="16sp"
+                            android:contentDescription="Champ pour entrer le nom complet" />
                     </LinearLayout>
 
-                    <!-- Email Field -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -151,7 +178,8 @@
                             android:layout_height="wrap_content"
                             android:text="Email"
                             android:textColor="#666666"
-                            android:textSize="14sp" />
+                            android:textSize="14sp"
+                            android:contentDescription="Label pour le champ de l'email" />
 
                         <EditText
                             android:id="@+id/input_email"
@@ -159,12 +187,13 @@
                             android:layout_height="48dp"
                             android:layout_marginTop="4dp"
                             android:background="@drawable/edittext_background"
-                            android:hint="adnane.jboub@gmail.com"
+                            android:hint="Entrez votre adresse email"
                             android:inputType="textEmailAddress"
                             android:padding="12dp"
                             android:textColor="#222222"
                             android:textColorHint="#999999"
-                            android:textSize="16sp" />
+                            android:textSize="16sp"
+                            android:contentDescription="Champ pour entrer l'adresse email" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -179,20 +208,41 @@
                             android:layout_height="wrap_content"
                             android:text="Téléphone"
                             android:textColor="#666666"
-                            android:textSize="14sp" />
+                            android:textSize="14sp"
+                            android:contentDescription="Label pour le champ du numéro de téléphone" />
 
-                        <EditText
-                            android:id="@+id/input_phone"
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="48dp"
                             android:layout_marginTop="4dp"
-                            android:background="@drawable/edittext_background"
-                            android:hint="+216 08 04 02 01"
-                            android:inputType="phone"
-                            android:padding="12dp"
-                            android:textColor="#222222"
-                            android:textColorHint="#999999"
-                            android:textSize="16sp" />
+                            android:orientation="horizontal"
+                            android:background="@drawable/edittext_background">
+
+                            <com.hbb20.CountryCodePicker
+                                android:id="@+id/country_code_picker"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:layout_marginStart="12dp"
+                                app:ccp_defaultPhoneCode="212"
+                                app:ccp_textSize="16sp"
+                                app:ccp_arrowSize="12dp"
+                                app:ccp_contentColor="#222222"
+                                android:contentDescription="Sélecteur de code pays pour le numéro de téléphone" />
+
+                            <EditText
+                                android:id="@+id/input_phone"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:background="@null"
+                                android:hint="Entrez votre numéro de téléphone"
+                                android:inputType="phone"
+                                android:padding="12dp"
+                                android:textColor="#222222"
+                                android:textColorHint="#999999"
+                                android:textSize="16sp"
+                                android:contentDescription="Champ pour entrer le numéro de téléphone" />
+                        </LinearLayout>
                     </LinearLayout>
 
                     <LinearLayout
@@ -207,7 +257,8 @@
                             android:layout_height="wrap_content"
                             android:text="Adresse"
                             android:textColor="#666666"
-                            android:textSize="14sp" />
+                            android:textSize="14sp"
+                            android:contentDescription="Label pour le champ de l'adresse" />
 
                         <EditText
                             android:id="@+id/input_address"
@@ -215,12 +266,13 @@
                             android:layout_height="48dp"
                             android:layout_marginTop="4dp"
                             android:background="@drawable/edittext_background"
-                            android:hint="HM"
+                            android:hint="Entrez votre adresse"
                             android:inputType="textPostalAddress"
                             android:padding="12dp"
                             android:textColor="#222222"
                             android:textColorHint="#999999"
-                            android:textSize="16sp" />
+                            android:textSize="16sp"
+                            android:contentDescription="Champ pour entrer l'adresse" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -235,7 +287,8 @@
                             android:layout_height="wrap_content"
                             android:text="Ville"
                             android:textColor="#666666"
-                            android:textSize="14sp" />
+                            android:textSize="14sp"
+                            android:contentDescription="Label pour le champ de la ville" />
 
                         <EditText
                             android:id="@+id/input_city"
@@ -243,12 +296,13 @@
                             android:layout_height="48dp"
                             android:layout_marginTop="4dp"
                             android:background="@drawable/edittext_background"
-                            android:hint="Casablanca"
+                            android:hint="Entrez votre ville"
                             android:inputType="text"
                             android:padding="12dp"
                             android:textColor="#222222"
                             android:textColorHint="#999999"
-                            android:textSize="16sp" />
+                            android:textSize="16sp"
+                            android:contentDescription="Champ pour entrer la ville" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -267,7 +321,8 @@
                             android:text="Sauvegarder"
                             android:textColor="#FFFFFF"
                             android:textStyle="bold"
-                            android:textSize="16sp" />
+                            android:textSize="16sp"
+                            android:contentDescription="Enregistrer les modifications du profil" />
 
                         <Button
                             android:id="@+id/btn_cancel"
@@ -279,7 +334,8 @@
                             android:text="Annuler"
                             android:textColor="#222222"
                             android:textStyle="bold"
-                            android:textSize="16sp" />
+                            android:textSize="16sp"
+                            android:contentDescription="Annuler les modifications du profil" />
                     </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>

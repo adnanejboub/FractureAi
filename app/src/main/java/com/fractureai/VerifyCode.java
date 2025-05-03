@@ -1,5 +1,6 @@
 package com.fractureai;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -7,6 +8,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -24,7 +26,11 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.PhoneAuthCredential;
 import com.google.firebase.auth.PhoneAuthOptions;
 import com.google.firebase.auth.PhoneAuthProvider;
+import com.google.firebase.auth.UserProfileChangeRequest;
+import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class VerifyCode extends AppCompatActivity {
@@ -38,11 +44,14 @@ public class VerifyCode extends AppCompatActivity {
     private EditText[] codeDigits = new EditText[6];
 
     private String phoneNumber;
+    private String name;
+    private String password;
     private CountDownTimer resendTimer;
     private boolean canResend = false;
 
-    // Firebase Phone Auth
+    // Firebase
     private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
     private String mVerificationId;
     private PhoneAuthProvider.ForceResendingToken mResendToken;
     private PhoneAuthProvider.OnVerificationStateChangedCallbacks mCallbacks;
@@ -52,13 +61,16 @@ public class VerifyCode extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_verify_code);
 
-        // Initialiser Firebase Auth
+        // Initialiser Firebase Auth et Firestore
         mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
 
-        // Récupérer le numéro de téléphone depuis l'intent
+        // Récupérer les données depuis l'intent
         Intent intent = getIntent();
         phoneNumber = intent.getStringExtra("PHONE_NUMBER");
         mVerificationId = intent.getStringExtra("VERIFICATION_ID");
+        name = intent.getStringExtra("NAME");
+        password = intent.getStringExtra("PASSWORD");
 
         // Initialiser les vues
         phoneNumberText = findViewById(R.id.phone_number);
@@ -83,12 +95,7 @@ public class VerifyCode extends AppCompatActivity {
         setupFirebaseCallbacks();
 
         // Configurer le bouton de vérification
-        btnVerify.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                verifyCodeWithFirebase();
-            }
-        });
+        btnVerify.setOnClickListener(v -> verifyCodeWithFirebase());
 
         // Configurer le texte de renvoi de code
         setupResendCode();
@@ -105,27 +112,18 @@ public class VerifyCode extends AppCompatActivity {
         mCallbacks = new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
             @Override
             public void onVerificationCompleted(@NonNull PhoneAuthCredential credential) {
-                // Cette méthode est appelée lorsque la vérification est automatiquement complétée
-                // par le service de Google Play (par exemple, si l'utilisateur a déjà validé son numéro récemment)
                 Log.d(TAG, "onVerificationCompleted:" + credential);
-
-                // Connecter l'utilisateur automatiquement
                 signInWithPhoneAuthCredential(credential);
             }
 
             @Override
             public void onVerificationFailed(@NonNull FirebaseException e) {
-                // Cette méthode est appelée si une erreur se produit lors de la demande de vérification
                 Log.w(TAG, "onVerificationFailed", e);
-
                 if (e instanceof FirebaseAuthInvalidCredentialsException) {
-                    // Numéro de téléphone invalide
                     Toast.makeText(VerifyCode.this, "Numéro de téléphone invalide", Toast.LENGTH_SHORT).show();
                 } else if (e instanceof FirebaseTooManyRequestsException) {
-                    // Trop de tentatives de vérification
                     Toast.makeText(VerifyCode.this, "Trop de tentatives, veuillez réessayer plus tard", Toast.LENGTH_SHORT).show();
                 } else {
-                    // Autre erreur
                     Toast.makeText(VerifyCode.this, "Erreur lors de la vérification: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
@@ -133,13 +131,9 @@ public class VerifyCode extends AppCompatActivity {
             @Override
             public void onCodeSent(@NonNull String verificationId,
                                    @NonNull PhoneAuthProvider.ForceResendingToken token) {
-                // Le code SMS a été envoyé au numéro de téléphone fourni
                 Log.d(TAG, "onCodeSent:" + verificationId);
-
-                // Enregistrer le ID de vérification et le token de renvoi
                 mVerificationId = verificationId;
                 mResendToken = token;
-
                 Toast.makeText(VerifyCode.this, "Code envoyé", Toast.LENGTH_SHORT).show();
             }
         };
@@ -163,28 +157,21 @@ public class VerifyCode extends AppCompatActivity {
 
                 @Override
                 public void afterTextChanged(Editable s) {
-                    // Si un chiffre est entré, passer au champ suivant
                     if (s.length() == 1) {
-                        // Passer au champ suivant s'il existe
                         if (currentIndex < codeDigits.length - 1) {
                             codeDigits[currentIndex + 1].requestFocus();
                         } else {
-                            // Si c'est le dernier champ, masquer le clavier
                             hideKeyboard(codeDigits[currentIndex]);
                         }
                     }
-
-                    // Activer le bouton de vérification si tous les champs sont remplis
                     checkAllFieldsFilled();
                 }
             });
 
-            // Configurer le comportement de suppression pour revenir au champ précédent
             codeDigits[i].setOnKeyListener((v, keyCode, event) -> {
                 if (keyCode == android.view.KeyEvent.KEYCODE_DEL &&
                         codeDigits[currentIndex].getText().toString().isEmpty() &&
                         currentIndex > 0) {
-                    // Revenir au champ précédent si le champ actuel est vide
                     codeDigits[currentIndex - 1].requestFocus();
                     codeDigits[currentIndex - 1].setText("");
                     return true;
@@ -207,28 +194,18 @@ public class VerifyCode extends AppCompatActivity {
             }
         }
 
-        // Activer ou désactiver le bouton de vérification
         btnVerify.setEnabled(allFilled);
-
-        if (allFilled) {
-            btnVerify.setAlpha(1.0f);
-        } else {
-            btnVerify.setAlpha(0.6f);
-        }
+        btnVerify.setAlpha(allFilled ? 1.0f : 0.6f);
     }
 
     /**
      * Configure le texte de renvoi de code avec un compte à rebours
      */
     private void setupResendCode() {
-        // Désactiver le renvoi pendant le compte à rebours
         canResend = false;
-
-        // Mettre à jour le texte de renvoi
         resendCodeText.setText("Renvoi possible dans 60 secondes");
         resendCodeText.setTextColor(getResources().getColor(android.R.color.darker_gray));
 
-        // Démarrer le compte à rebours
         resendTimer = new CountDownTimer(60000, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
@@ -237,24 +214,16 @@ public class VerifyCode extends AppCompatActivity {
 
             @Override
             public void onFinish() {
-                // Activer le renvoi
                 canResend = true;
                 resendCodeText.setText("Vous n'avez pas reçu le code ? Renvoyer");
                 resendCodeText.setTextColor(getResources().getColor(R.color.purple));
             }
         }.start();
 
-        // Configurer le clic sur le texte de renvoi
-        resendCodeText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (canResend) {
-                    // Renvoyer le code via Firebase
-                    resendVerificationCodeWithFirebase();
-
-                    // Redémarrer le compte à rebours
-                    setupResendCode();
-                }
+        resendCodeText.setOnClickListener(v -> {
+            if (canResend) {
+                resendVerificationCodeWithFirebase();
+                setupResendCode();
             }
         });
     }
@@ -275,15 +244,11 @@ public class VerifyCode extends AppCompatActivity {
 
             PhoneAuthProvider.verifyPhoneNumber(options);
 
-            // Réinitialiser les champs
             for (EditText digit : codeDigits) {
                 digit.setText("");
             }
-
-            // Donner le focus au premier champ
             codeDigits[0].requestFocus();
         } else {
-            // Si nous n'avons pas de token, c'est probablement que le code initial n'a pas été envoyé correctement
             Toast.makeText(this, "Erreur: impossible de renvoyer le code", Toast.LENGTH_SHORT).show();
         }
     }
@@ -292,29 +257,23 @@ public class VerifyCode extends AppCompatActivity {
      * Vérifie le code saisi avec Firebase
      */
     private void verifyCodeWithFirebase() {
-        // Construire le code complet
         StringBuilder codeBuilder = new StringBuilder();
         for (EditText digit : codeDigits) {
             codeBuilder.append(digit.getText().toString());
         }
         String code = codeBuilder.toString();
 
-        // Vérifier que le code a 6 chiffres
         if (code.length() != 6) {
             Toast.makeText(this, "Veuillez entrer un code valide à 6 chiffres", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Vérifier que nous avons un ID de vérification
         if (mVerificationId == null) {
             Toast.makeText(this, "Erreur: aucun code de vérification n'a été envoyé", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Créer les credentials avec le code saisi et l'ID de vérification
         PhoneAuthCredential credential = PhoneAuthProvider.getCredential(mVerificationId, code);
-
-        // Connecter l'utilisateur avec ces credentials
         signInWithPhoneAuthCredential(credential);
     }
 
@@ -323,41 +282,91 @@ public class VerifyCode extends AppCompatActivity {
      */
     private void signInWithPhoneAuthCredential(PhoneAuthCredential credential) {
         mAuth.signInWithCredential(credential)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            // Connexion réussie
-                            Log.d(TAG, "signInWithCredential:success");
-                            FirebaseUser user = task.getResult().getUser();
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        Log.d(TAG, "signInWithCredential:success");
+                        FirebaseUser user = task.getResult().getUser();
 
-                            // Informer l'utilisateur
-                            Toast.makeText(VerifyCode.this, "Authentification réussie!", Toast.LENGTH_SHORT).show();
+                        if (user != null) {
+                            // Mettre à jour le profil utilisateur avec le nom
+                            UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
+                                    .setDisplayName(name)
+                                    .build();
 
-                            // Rediriger vers l'activité principale ou de profil
-                            redirectToMainActivity(user);
-                        } else {
-                            // Échec de la connexion
-                            Log.w(TAG, "signInWithCredential:failure", task.getException());
+                            user.updateProfile(profileUpdates)
+                                    .addOnCompleteListener(profileTask -> {
+                                        if (profileTask.isSuccessful()) {
+                                            Log.d(TAG, "User profile updated.");
 
-                            if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
-                                // Le code saisi est invalide
-                                Toast.makeText(VerifyCode.this, "Code incorrect. Veuillez réessayer.", Toast.LENGTH_SHORT).show();
-                            } else {
-                                // Autre erreur
-                                Toast.makeText(VerifyCode.this, "Erreur d'authentification: " + task.getException().getMessage(),
-                                        Toast.LENGTH_SHORT).show();
-                            }
+                                            // Mettre à jour le mot de passe
+                                            user.updatePassword(password)
+                                                    .addOnCompleteListener(passwordTask -> {
+                                                        if (passwordTask.isSuccessful()) {
+                                                            Log.d(TAG, "Password updated.");
 
-                            // Réinitialiser les champs
-                            for (EditText digit : codeDigits) {
-                                digit.setText("");
-                            }
+                                                            // Enregistrer les données dans Firestore
+                                                            saveUserToFirestore(user.getUid(), name,
+                                                                    user.getEmail() != null ? user.getEmail() : "",
+                                                                    phoneNumber, "", "");
 
-                            // Donner le focus au premier champ
-                            codeDigits[0].requestFocus();
+                                                            // Informer l'utilisateur
+                                                            Toast.makeText(VerifyCode.this, "Authentification et enregistrement réussis !", Toast.LENGTH_SHORT).show();
+
+                                                            // Rediriger
+                                                            redirectToMainActivity(user);
+                                                        } else {
+                                                            Log.w(TAG, "Password update failed", passwordTask.getException());
+                                                            Toast.makeText(VerifyCode.this, "Échec de la mise à jour du mot de passe : " + passwordTask.getException().getMessage(), Toast.LENGTH_LONG).show();
+                                                            mAuth.signOut();
+                                                        }
+                                                    });
+                                        } else {
+                                            Log.w(TAG, "User profile update failed", profileTask.getException());
+                                            Toast.makeText(VerifyCode.this, "Échec de la mise à jour du profil : " + profileTask.getException().getMessage(), Toast.LENGTH_LONG).show();
+                                            mAuth.signOut();
+                                        }
+                                    });
                         }
+                    } else {
+                        Log.w(TAG, "signInWithCredential:failure", task.getException());
+                        if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
+                            Toast.makeText(VerifyCode.this, "Code incorrect. Veuillez réessayer.", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(VerifyCode.this, "Erreur d'authentification : " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+
+                        for (EditText digit : codeDigits) {
+                            digit.setText("");
+                        }
+                        codeDigits[0].requestFocus();
                     }
+                });
+    }
+
+    /**
+     * Enregistre les données utilisateur dans Firestore
+     */
+    private void saveUserToFirestore(String uid, String name, String email, String phone, String address, String city) {
+        Log.d(TAG, "Attempting to save user to Firestore: uid=" + uid + ", name=" + name + ", email=" + email + ", phone=" + phone);
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("uid", uid);
+        userData.put("name", name);
+        userData.put("email", email);
+        userData.put("phone", phone);
+        userData.put("address", address);
+        userData.put("city", city);
+        userData.put("profilePicture", "");
+        userData.put("createdAt", System.currentTimeMillis());
+
+        db.collection("users").document(uid)
+                .set(userData)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "User data successfully saved to Firestore for UID: " + uid);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to save user data to Firestore for UID: " + uid + ", Error: " + e.getMessage(), e);
+                    Toast.makeText(VerifyCode.this, "Échec de l'enregistrement des données : " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    mAuth.signOut();
                 });
     }
 
@@ -365,19 +374,13 @@ public class VerifyCode extends AppCompatActivity {
      * Redirige vers l'activité principale après une authentification réussie
      */
     private void redirectToMainActivity(FirebaseUser user) {
-        // Vérifier si c'est un nouvel utilisateur (première connexion)
         boolean isNewUser = user.getMetadata().getCreationTimestamp() == user.getMetadata().getLastSignInTimestamp();
-
-        // Rediriger vers l'activité appropriée
         Intent intent;
         if (isNewUser) {
-            // Rediriger vers l'écran de complétion du profil pour les nouveaux utilisateurs
             intent = new Intent(VerifyCode.this, Profil.class);
         } else {
-            // Rediriger vers l'écran principal pour les utilisateurs existants
             intent = new Intent(VerifyCode.this, MainActivity.class);
         }
-
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
@@ -388,9 +391,8 @@ public class VerifyCode extends AppCompatActivity {
      */
     private void showKeyboard(View view) {
         if (view.requestFocus()) {
-            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager)
-                    getSystemService(INPUT_METHOD_SERVICE);
-            imm.showSoftInput(view, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
         }
     }
 
@@ -398,15 +400,13 @@ public class VerifyCode extends AppCompatActivity {
      * Masque le clavier pour une vue spécifique
      */
     private void hideKeyboard(View view) {
-        android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager)
-                getSystemService(INPUT_METHOD_SERVICE);
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Arrêter le compte à rebours si l'activité est détruite
         if (resendTimer != null) {
             resendTimer.cancel();
         }

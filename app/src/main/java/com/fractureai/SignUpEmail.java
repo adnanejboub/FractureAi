@@ -43,8 +43,11 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.auth.UserProfileChangeRequest;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SignUpEmail extends AppCompatActivity {
 
@@ -57,8 +60,8 @@ public class SignUpEmail extends AppCompatActivity {
     private LinearLayout btnGoogle, btnFacebook;
     private FrameLayout loadingOverlay;
 
-
     private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
 
     // Google Sign-In
     private GoogleSignInClient mGoogleSignInClient;
@@ -73,8 +76,9 @@ public class SignUpEmail extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_sign_up_email);
 
-
+        // Initialize Firebase
         mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
 
         // Configure Google Sign-In
         configureGoogleSignIn();
@@ -124,31 +128,25 @@ public class SignUpEmail extends AppCompatActivity {
 
                         @Override
                         public void onCancel() {
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    loadingOverlay.setVisibility(View.GONE);
-                                    btnRegister.setEnabled(true);
-                                    btnGoogle.setEnabled(true);
-                                    btnFacebook.setEnabled(true);
-                                    Log.d(TAG, "facebook:onCancel");
-                                    Toast.makeText(SignUpEmail.this, "Authentification Facebook annulée", Toast.LENGTH_SHORT).show();
-                                }
+                            runOnUiThread(() -> {
+                                loadingOverlay.setVisibility(View.GONE);
+                                btnRegister.setEnabled(true);
+                                btnGoogle.setEnabled(true);
+                                btnFacebook.setEnabled(true);
+                                Log.d(TAG, "facebook:onCancel");
+                                Toast.makeText(SignUpEmail.this, "Authentification Facebook annulée", Toast.LENGTH_SHORT).show();
                             });
                         }
 
                         @Override
                         public void onError(@NonNull FacebookException error) {
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    loadingOverlay.setVisibility(View.GONE);
-                                    btnRegister.setEnabled(true);
-                                    btnGoogle.setEnabled(true);
-                                    btnFacebook.setEnabled(true);
-                                    Log.d(TAG, "facebook:onError", error);
-                                    Toast.makeText(SignUpEmail.this, "Erreur d'authentification Facebook: " + error.getMessage(), Toast.LENGTH_LONG).show();
-                                }
+                            runOnUiThread(() -> {
+                                loadingOverlay.setVisibility(View.GONE);
+                                btnRegister.setEnabled(true);
+                                btnGoogle.setEnabled(true);
+                                btnFacebook.setEnabled(true);
+                                Log.d(TAG, "facebook:onError", error);
+                                Toast.makeText(SignUpEmail.this, "Erreur d'authentification Facebook: " + error.getMessage(), Toast.LENGTH_LONG).show();
                             });
                         }
                     });
@@ -169,16 +167,13 @@ public class SignUpEmail extends AppCompatActivity {
                         Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
                         handleGoogleSignInResult(task);
                     } else {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                loadingOverlay.setVisibility(View.GONE);
-                                btnRegister.setEnabled(true);
-                                btnGoogle.setEnabled(true);
-                                btnFacebook.setEnabled(true);
-                                Log.d(TAG, "Google Sign-Up: L'utilisateur a annulé ou une erreur s'est produite");
-                                Toast.makeText(SignUpEmail.this, "L'inscription avec Google n'a pas pu être complétée. Veuillez réessayer.", Toast.LENGTH_SHORT).show();
-                            }
+                        runOnUiThread(() -> {
+                            loadingOverlay.setVisibility(View.GONE);
+                            btnRegister.setEnabled(true);
+                            btnGoogle.setEnabled(true);
+                            btnFacebook.setEnabled(true);
+                            Log.d(TAG, "Google Sign-Up: L'utilisateur a annulé ou une erreur s'est produite");
+                            Toast.makeText(SignUpEmail.this, "L'inscription avec Google n'a pas pu être complétée. Veuillez réessayer.", Toast.LENGTH_SHORT).show();
                         });
                     }
                 }
@@ -194,48 +189,40 @@ public class SignUpEmail extends AppCompatActivity {
             if (account != null) {
                 String idToken = account.getIdToken();
                 if (idToken != null) {
-                    // Authenticate with Firebase
-                    firebaseAuthWithGoogle(idToken);
+                    firebaseAuthWithGoogle(idToken, account.getDisplayName(), account.getEmail());
                 } else {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            loadingOverlay.setVisibility(View.GONE);
-                            btnRegister.setEnabled(true);
-                            btnGoogle.setEnabled(true);
-                            btnFacebook.setEnabled(true);
-                            Log.e(TAG, "Google Sign-Up: ID token null");
-                            Toast.makeText(SignUpEmail.this, "Erreur d'authentification Google. Veuillez réessayer.", Toast.LENGTH_LONG).show();
-                        }
+                    runOnUiThread(() -> {
+                        loadingOverlay.setVisibility(View.GONE);
+                        btnRegister.setEnabled(true);
+                        btnGoogle.setEnabled(true);
+                        btnFacebook.setEnabled(true);
+                        Log.e(TAG, "Google Sign-Up: ID token null");
+                        Toast.makeText(SignUpEmail.this, "Erreur d'authentification Google. Veuillez réessayer.", Toast.LENGTH_LONG).show();
                     });
                 }
             }
         } catch (ApiException e) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    loadingOverlay.setVisibility(View.GONE);
-                    btnRegister.setEnabled(true);
-                    btnGoogle.setEnabled(true);
-                    btnFacebook.setEnabled(true);
-                    Log.e(TAG, "Google Sign-Up a échoué avec le code: " + e.getStatusCode(), e);
-
-                    String errorMessage;
-                    switch (e.getStatusCode()) {
-                        case 12500: // SIGN_IN_CANCELLED
-                            errorMessage = "L'inscription Google a été annulée";
-                            break;
-                        case 12501: // SIGN_IN_FAILED
-                            errorMessage = "L'inscription Google a échoué. Vérifiez votre connexion internet";
-                            break;
-                        case 12502: // SIGN_IN_CURRENTLY_IN_PROGRESS
-                            errorMessage = "Une inscription Google est déjà en cours";
-                            break;
-                        default:
-                            errorMessage = "Erreur Google Sign-Up (code " + e.getStatusCode() + ")";
-                    }
-                    Toast.makeText(SignUpEmail.this, errorMessage, Toast.LENGTH_LONG).show();
+            runOnUiThread(() -> {
+                loadingOverlay.setVisibility(View.GONE);
+                btnRegister.setEnabled(true);
+                btnGoogle.setEnabled(true);
+                btnFacebook.setEnabled(true);
+                Log.e(TAG, "Google Sign-Up a échoué avec le code: " + e.getStatusCode(), e);
+                String errorMessage;
+                switch (e.getStatusCode()) {
+                    case 12500: // SIGN_IN_CANCELLED
+                        errorMessage = "L'inscription Google a été annulée";
+                        break;
+                    case 12501: // SIGN_IN_FAILED
+                        errorMessage = "L'inscription Google a échoué. Vérifiez votre connexion internet";
+                        break;
+                    case 12502: // SIGN_IN_CURRENTLY_IN_PROGRESS
+                        errorMessage = "Une inscription Google est déjà en cours";
+                        break;
+                    default:
+                        errorMessage = "Erreur Google Sign-Up (code " + e.getStatusCode() + ")";
                 }
+                Toast.makeText(SignUpEmail.this, errorMessage, Toast.LENGTH_LONG).show();
             });
         }
     }
@@ -255,7 +242,6 @@ public class SignUpEmail extends AppCompatActivity {
             Log.e(TAG, "Vue racine non trouvée");
         }
 
-        // Initialize UI elements
         logo_app = findViewById(R.id.logo);
         btnPhone = findViewById(R.id.btn_phone);
         loginText = findViewById(R.id.login_text);
@@ -268,7 +254,6 @@ public class SignUpEmail extends AppCompatActivity {
         btnFacebook = findViewById(R.id.btn_facebook);
         loadingOverlay = findViewById(R.id.loading_overlay);
 
-        // Verify UI elements
         if (logo_app == null || btnPhone == null || loginText == null || btnRegister == null ||
                 inputName == null || inputEmail == null || inputPassword == null ||
                 inputConfirmPassword == null || btnGoogle == null || btnFacebook == null || loadingOverlay == null) {
@@ -325,47 +310,35 @@ public class SignUpEmail extends AppCompatActivity {
      * Sign up with Google
      */
     private void signUpWithGoogle() {
-        // Show loader and disable buttons
         loadingOverlay.setVisibility(View.VISIBLE);
         btnRegister.setEnabled(false);
         btnGoogle.setEnabled(false);
         btnFacebook.setEnabled(false);
 
-        // Sign out to avoid session issues
-        mGoogleSignInClient.signOut().addOnCompleteListener(this, new OnCompleteListener<Void>() {
-            @Override
-            public void onComplete(@NonNull Task<Void> task) {
-                // Check network connectivity
-                if (!isNetworkConnected()) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            loadingOverlay.setVisibility(View.GONE);
-                            btnRegister.setEnabled(true);
-                            btnGoogle.setEnabled(true);
-                            btnFacebook.setEnabled(true);
-                            Toast.makeText(SignUpEmail.this, "Vérifiez votre connexion internet et réessayez", Toast.LENGTH_LONG).show();
-                        }
-                    });
-                    return;
-                }
+        mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
+            if (!isNetworkConnected()) {
+                runOnUiThread(() -> {
+                    loadingOverlay.setVisibility(View.GONE);
+                    btnRegister.setEnabled(true);
+                    btnGoogle.setEnabled(true);
+                    btnFacebook.setEnabled(true);
+                    Toast.makeText(SignUpEmail.this, "Vérifiez votre connexion internet et réessayez", Toast.LENGTH_LONG).show();
+                });
+                return;
+            }
 
-                try {
-                    Intent signInIntent = mGoogleSignInClient.getSignInIntent();
-                    googleSignInLauncher.launch(signInIntent);
-                } catch (Exception e) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            loadingOverlay.setVisibility(View.GONE);
-                            btnRegister.setEnabled(true);
-                            btnGoogle.setEnabled(true);
-                            btnFacebook.setEnabled(true);
-                            Log.e(TAG, "Erreur lors du lancement de Google Sign-Up: " + e.getMessage(), e);
-                            Toast.makeText(SignUpEmail.this, "Impossible de lancer l'inscription Google. Veuillez réessayer", Toast.LENGTH_LONG).show();
-                        }
-                    });
-                }
+            try {
+                Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+                googleSignInLauncher.launch(signInIntent);
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    loadingOverlay.setVisibility(View.GONE);
+                    btnRegister.setEnabled(true);
+                    btnGoogle.setEnabled(true);
+                    btnFacebook.setEnabled(true);
+                    Log.e(TAG, "Erreur lors du lancement de Google Sign-Up: " + e.getMessage(), e);
+                    Toast.makeText(SignUpEmail.this, "Impossible de lancer l'inscription Google. Veuillez réessayer", Toast.LENGTH_LONG).show();
+                });
             }
         });
     }
@@ -374,13 +347,11 @@ public class SignUpEmail extends AppCompatActivity {
      * Sign up with Facebook
      */
     private void signUpWithFacebook() {
-        // Show loader and disable buttons
         loadingOverlay.setVisibility(View.VISIBLE);
         btnRegister.setEnabled(false);
         btnGoogle.setEnabled(false);
         btnFacebook.setEnabled(false);
 
-        // Check network connectivity
         if (!isNetworkConnected()) {
             loadingOverlay.setVisibility(View.GONE);
             btnRegister.setEnabled(true);
@@ -391,7 +362,6 @@ public class SignUpEmail extends AppCompatActivity {
         }
 
         try {
-            // Sign out to avoid session issues
             LoginManager.getInstance().logOut();
             LoginManager.getInstance().logInWithReadPermissions(this, Arrays.asList("email", "public_profile"));
         } catch (Exception e) {
@@ -413,7 +383,6 @@ public class SignUpEmail extends AppCompatActivity {
         String password = inputPassword.getText().toString();
         String confirmPassword = inputConfirmPassword.getText().toString();
 
-        // Validate fields
         if (name.isEmpty()) {
             inputName.setError("Le nom est requis");
             inputName.requestFocus();
@@ -444,152 +413,156 @@ public class SignUpEmail extends AppCompatActivity {
             return;
         }
 
-        // Check network connectivity
         if (!isNetworkConnected()) {
             Toast.makeText(this, "Vérifiez votre connexion internet et réessayez", Toast.LENGTH_LONG).show();
             return;
         }
 
-        // Show loader and disable buttons
         loadingOverlay.setVisibility(View.VISIBLE);
         btnRegister.setEnabled(false);
         btnGoogle.setEnabled(false);
         btnFacebook.setEnabled(false);
         Toast.makeText(SignUpEmail.this, "Inscription en cours...", Toast.LENGTH_SHORT).show();
 
-        // Create user with email and password
         mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            Log.d(TAG, "createUserWithEmail:success");
-                            FirebaseUser user = mAuth.getCurrentUser();
-
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        Log.d(TAG, "createUserWithEmail:success");
+                        FirebaseUser user = mAuth.getCurrentUser();
+                        if (user != null) {
                             // Update user profile with display name
                             UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
                                     .setDisplayName(name)
                                     .build();
-
                             user.updateProfile(profileUpdates)
-                                    .addOnCompleteListener(new OnCompleteListener<Void>() {
-                                        @Override
-                                        public void onComplete(@NonNull Task<Void> task) {
-                                            if (task.isSuccessful()) {
-                                                Log.d(TAG, "User profile updated.");
-                                                Toast.makeText(SignUpEmail.this, "Inscription réussie", Toast.LENGTH_SHORT).show();
-                                                redirectToSignIn();
-                                            } else {
-                                                runOnUiThread(new Runnable() {
-                                                    @Override
-                                                    public void run() {
-                                                        loadingOverlay.setVisibility(View.GONE);
-                                                        btnRegister.setEnabled(true);
-                                                        btnGoogle.setEnabled(true);
-                                                        btnFacebook.setEnabled(true);
-                                                        Log.w(TAG, "User profile update failed", task.getException());
-                                                        Toast.makeText(SignUpEmail.this, "Erreur lors de la mise à jour du profil", Toast.LENGTH_SHORT).show();
-                                                    }
-                                                });
-                                            }
+                                    .addOnCompleteListener(profileTask -> {
+                                        if (profileTask.isSuccessful()) {
+                                            // Save user data to Firestore
+                                            saveUserToFirestore(user.getUid(), name, email, "", "", "");
+                                            Log.d(TAG, "User profile updated.");
+                                            Toast.makeText(SignUpEmail.this, "Inscription réussie", Toast.LENGTH_SHORT).show();
+                                            redirectToSignIn();
+                                        } else {
+                                            runOnUiThread(() -> {
+                                                loadingOverlay.setVisibility(View.GONE);
+                                                btnRegister.setEnabled(true);
+                                                btnGoogle.setEnabled(true);
+                                                btnFacebook.setEnabled(true);
+                                                Log.w(TAG, "User profile update failed", profileTask.getException());
+                                                Toast.makeText(SignUpEmail.this, "Erreur lors de la mise à jour du profil", Toast.LENGTH_SHORT).show();
+                                            });
                                         }
                                     });
-                        } else {
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    loadingOverlay.setVisibility(View.GONE);
-                                    btnRegister.setEnabled(true);
-                                    btnGoogle.setEnabled(true);
-                                    btnFacebook.setEnabled(true);
-                                    Log.w(TAG, "createUserWithEmail:failure", task.getException());
-                                    Toast.makeText(SignUpEmail.this, "Échec de l'inscription: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
-                                }
-                            });
                         }
-                    }
-                });
-    }
-
-    /**
-     * Authenticate with Google
-     */
-    private void firebaseAuthWithGoogle(String idToken) {
-        Log.d(TAG, "firebaseAuthWithGoogle:" + idToken.substring(0, Math.min(10, idToken.length())) + "...");
-
-        AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
-        mAuth.signInWithCredential(credential)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                loadingOverlay.setVisibility(View.GONE);
-                                if (task.isSuccessful()) {
-                                    Log.d(TAG, "signInWithCredential:success");
-                                    FirebaseUser user = mAuth.getCurrentUser();
-                                    if (user != null) {
-                                        Toast.makeText(SignUpEmail.this, "Inscription Google réussie !", Toast.LENGTH_SHORT).show();
-                                        redirectToSignIn();
-                                    }
-                                } else {
-                                    btnRegister.setEnabled(true);
-                                    btnGoogle.setEnabled(true);
-                                    btnFacebook.setEnabled(true);
-                                    Log.e(TAG, "signInWithCredential:failure", task.getException());
-                                    String errorMessage = "Erreur d'inscription Google";
-                                    if (task.getException() != null) {
-                                        errorMessage += ": " + task.getException().getMessage();
-                                    }
-                                    Toast.makeText(SignUpEmail.this, errorMessage, Toast.LENGTH_LONG).show();
-                                }
-                            }
+                    } else {
+                        runOnUiThread(() -> {
+                            loadingOverlay.setVisibility(View.GONE);
+                            btnRegister.setEnabled(true);
+                            btnGoogle.setEnabled(true);
+                            btnFacebook.setEnabled(true);
+                            Log.w(TAG, "createUserWithEmail:failure", task.getException());
+                            Toast.makeText(SignUpEmail.this, "Échec de l'inscription: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                         });
                     }
                 });
     }
 
     /**
-     * Handle Facebook Access Token
+     * Authenticate with Google and save to Firestore
+     */
+    private void firebaseAuthWithGoogle(String idToken, String name, String email) {
+        Log.d(TAG, "firebaseAuthWithGoogle:" + idToken.substring(0, Math.min(10, idToken.length())) + "...");
+
+        AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
+        mAuth.signInWithCredential(credential)
+                .addOnCompleteListener(this, task -> {
+                    runOnUiThread(() -> {
+                        loadingOverlay.setVisibility(View.GONE);
+                        if (task.isSuccessful()) {
+                            Log.d(TAG, "signInWithCredential:success");
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            if (user != null) {
+                                // Save user data to Firestore
+                                saveUserToFirestore(user.getUid(), name != null ? name : "", email != null ? email : "", "", "", "");
+                                Toast.makeText(SignUpEmail.this, "Inscription Google réussie !", Toast.LENGTH_SHORT).show();
+                                redirectToSignIn();
+                            }
+                        } else {
+                            btnRegister.setEnabled(true);
+                            btnGoogle.setEnabled(true);
+                            btnFacebook.setEnabled(true);
+                            Log.e(TAG, "signInWithCredential:failure", task.getException());
+                            String errorMessage = "Erreur d'inscription Google";
+                            if (task.getException() != null) {
+                                errorMessage += ": " + task.getException().getMessage();
+                            }
+                            Toast.makeText(SignUpEmail.this, errorMessage, Toast.LENGTH_LONG).show();
+                        }
+                    });
+                });
+    }
+
+    /**
+     * Handle Facebook Access Token and save to Firestore
      */
     private void handleFacebookAccessToken(AccessToken token) {
         Log.d(TAG, "handleFacebookAccessToken:" + token);
 
         AuthCredential credential = FacebookAuthProvider.getCredential(token.getToken());
         mAuth.signInWithCredential(credential)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                loadingOverlay.setVisibility(View.GONE);
-                                if (task.isSuccessful()) {
-                                    Log.d(TAG, "signInWithCredential:success");
-                                    FirebaseUser user = mAuth.getCurrentUser();
-                                    Toast.makeText(SignUpEmail.this, "Inscription Facebook réussie !", Toast.LENGTH_SHORT).show();
-                                    redirectToSignIn();
+                .addOnCompleteListener(this, task -> {
+                    runOnUiThread(() -> {
+                        loadingOverlay.setVisibility(View.GONE);
+                        if (task.isSuccessful()) {
+                            Log.d(TAG, "signInWithCredential:success");
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            if (user != null) {
+                                // Save user data to Firestore
+                                saveUserToFirestore(user.getUid(), user.getDisplayName() != null ? user.getDisplayName() : "",
+                                        user.getEmail() != null ? user.getEmail() : "", "", "", "");
+                                Toast.makeText(SignUpEmail.this, "Inscription Facebook réussie !", Toast.LENGTH_SHORT).show();
+                                redirectToSignIn();
+                            }
+                        } else {
+                            btnRegister.setEnabled(true);
+                            btnGoogle.setEnabled(true);
+                            btnFacebook.setEnabled(true);
+                            Log.w(TAG, "signInWithCredential:failure", task.getException());
+                            String errorMessage = "Échec de l'inscription Facebook";
+                            if (task.getException() != null) {
+                                if (task.getException().getMessage() != null &&
+                                        task.getException().getMessage().contains("adresse email existe déjà")) {
+                                    errorMessage = "Un compte existe déjà avec cette adresse e-mail. Veuillez vous connecter avec cette méthode.";
                                 } else {
-                                    btnRegister.setEnabled(true);
-                                    btnGoogle.setEnabled(true);
-                                    btnFacebook.setEnabled(true);
-                                    Log.w(TAG, "signInWithCredential:failure", task.getException());
-                                    String errorMessage = "Échec de l'inscription Facebook";
-                                    if (task.getException() != null) {
-                                        if (task.getException().getMessage() != null &&
-                                                task.getException().getMessage().contains("adresse email existe déjà")) {
-                                            errorMessage = "Un compte existe déjà avec cette adresse e-mail. Veuillez vous connecter avec cette méthode.";
-                                        } else {
-                                            errorMessage += ": " + task.getException().getMessage();
-                                        }
-                                    }
-                                    Toast.makeText(SignUpEmail.this, errorMessage, Toast.LENGTH_LONG).show();
-                                    LoginManager.getInstance().logOut();
+                                    errorMessage += ": " + task.getException().getMessage();
                                 }
                             }
-                        });
-                    }
+                            Toast.makeText(SignUpEmail.this, errorMessage, Toast.LENGTH_LONG).show();
+                            LoginManager.getInstance().logOut();
+                        }
+                    });
+                });
+    }
+
+    /**
+     * Save user data to Firestore
+     */
+    private void saveUserToFirestore(String uid, String name, String email, String phone, String address, String city) {
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("uid", uid);
+        userData.put("name", name);
+        userData.put("email", email);
+        userData.put("phone", phone);
+        userData.put("address", address);
+        userData.put("city", city);
+        userData.put("profilePicture", ""); // Placeholder for profile picture URL
+
+        db.collection("users").document(uid)
+                .set(userData)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "User data saved to Firestore"))
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to save user data to Firestore", e);
+                    Toast.makeText(SignUpEmail.this, "Erreur lors de l'enregistrement des données: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
     }
 
