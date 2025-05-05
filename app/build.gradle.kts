@@ -69,7 +69,15 @@ dependencies {
     implementation("de.hdodenhof:circleimageview:3.1.0")
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("com.google.android.material:material:1.5.0")
-    //cadrage
+
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    // OkHttp pour les appels API Gemini
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // Gson pour parsing JSON
+    implementation("com.google.code.gson:gson:2.10.1")
 
 
 

@@ -108,13 +108,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // Éléments réservés aux utilisateurs authentifiés
         MenuItem historyItem = menu.findItem(R.id.nav_history);
         MenuItem profileItem = menu.findItem(R.id.nav_profile);
-        MenuItem scanItem = menu.findItem(R.id.nav_scan); // Ajout de l'élément scan
+        MenuItem scanItem = menu.findItem(R.id.nav_scan);
+        MenuItem helpItem = menu.findItem(R.id.nav_help); // Ajout de l'élément aide
 
         if (currentUser != null) {
             // Utilisateur authentifié
             if (historyItem != null) historyItem.setVisible(true);
             if (profileItem != null) profileItem.setVisible(true);
-            if (scanItem != null) scanItem.setVisible(true); // Rendre "Scanner" visible
+            if (scanItem != null) scanItem.setVisible(true);
+            if (helpItem != null) helpItem.setVisible(true); // Rendre "Aide" visible
 
             if (loginItem != null) loginItem.setVisible(false);
             if (logoutItem != null) logoutItem.setVisible(true);
@@ -125,7 +127,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             // Utilisateur non authentifié
             if (historyItem != null) historyItem.setVisible(false);
             if (profileItem != null) profileItem.setVisible(false);
-            if (scanItem != null) scanItem.setVisible(false); // Masquer "Scanner"
+            if (scanItem != null) scanItem.setVisible(false);
+            if (helpItem != null) helpItem.setVisible(false); // Masquer "Aide"
 
             if (loginItem != null) loginItem.setVisible(true);
             if (logoutItem != null) logoutItem.setVisible(false);
