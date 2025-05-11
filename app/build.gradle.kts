@@ -53,7 +53,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics:22.4.0")
     implementation("com.google.firebase:firebase-storage:21.0.1")
     implementation("com.google.firebase:firebase-firestore")
-
+    implementation("com.google.firebase:firebase-ml-modeldownloader")
     //Prefixe des numeros de telephone
     implementation("com.hbb20:ccp:2.7.3")
 
@@ -78,6 +78,15 @@ dependencies {
 
     // Gson pour parsing JSON
     implementation("com.google.code.gson:gson:2.10.1")
+
+    implementation("org.tensorflow:tensorflow-lite:2.10.0")
+    implementation("com.google.firebase:firebase-firestore:24.10.0")
+
+    implementation("org.tensorflow:tensorflow-lite:2.10.0")
+    implementation ("com.google.firebase:firebase-firestore:24.10.0")
+    implementation("androidx.activity:activity:1.8.0")
+    implementation("androidx.core:core:1.12.0")
+    implementation ("androidx.appcompat:appcompat:1.6.1")
 
 
 

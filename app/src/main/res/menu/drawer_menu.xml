@@ -13,10 +13,7 @@
             android:id="@+id/nav_about"
             android:icon="@drawable/ic_info"
             android:title="À propos" />
-        <item
-            android:id="@+id/nav_settings"
-            android:icon="@drawable/ic_setting"
-            android:title="Paramètres" />
+
     </group>
 
     <!-- Éléments visibles uniquement pour les utilisateurs authentifiés -->

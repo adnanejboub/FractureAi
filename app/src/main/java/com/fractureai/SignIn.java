@@ -65,7 +65,7 @@ public class SignIn extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private PhoneAuthProvider.OnVerificationStateChangedCallbacks mCallbacks;
     private String mVerificationId;
-    private PhoneAuthProvider.ForceResendingToken mResendToken; // Jeton pour renvoyer le code
+    private PhoneAuthProvider.ForceResendingToken mResendToken;
 
     // Google Sign-In
     private GoogleSignInClient mGoogleSignInClient;
@@ -110,7 +110,6 @@ public class SignIn extends AppCompatActivity {
         logo_app = findViewById(R.id.logo);
         signupText = findViewById(R.id.signup_text);
 
-
         if (countryCodePicker == null || inputPhone == null || btnLogin == null ||
                 btnEmail == null || btnPhone == null || loading_overlay == null ||
                 btnGoogle == null || btnFacebook == null || logo_app == null || signupText == null) {
@@ -118,9 +117,7 @@ public class SignIn extends AppCompatActivity {
             return;
         }
 
-
         countryCodePicker.registerCarrierNumberEditText(inputPhone);
-
 
         logo_app.setOnClickListener(v -> {
             try {
@@ -149,7 +146,6 @@ public class SignIn extends AppCompatActivity {
             }
         });
 
-
         btnPhone.setOnClickListener(v -> {
             btnPhone.setBackgroundResource(R.drawable.toggle_background_selected);
             btnPhone.setTextColor(getResources().getColor(android.R.color.white));
@@ -157,12 +153,9 @@ public class SignIn extends AppCompatActivity {
             btnEmail.setTextColor(getResources().getColor(R.color.purple));
         });
 
-
         btnGoogle.setOnClickListener(v -> signInWithGoogle());
 
-
         btnFacebook.setOnClickListener(v -> signInWithFacebook());
-
 
         signupText.setOnClickListener(v -> {
             try {
@@ -174,9 +167,6 @@ public class SignIn extends AppCompatActivity {
         });
     }
 
-    /**
-     * Configure les options de connexion Google
-     */
     private void configureGoogleSignIn() {
         try {
             GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -190,15 +180,10 @@ public class SignIn extends AppCompatActivity {
         }
     }
 
-    /**
-     * Configure la connexion Facebook
-     */
     private void configureFacebookLogin() {
         try {
-            // Création du gestionnaire de rappels Facebook
             mCallbackManager = CallbackManager.Factory.create();
 
-            // Configuration des rappels de connexion Facebook
             LoginManager.getInstance().registerCallback(mCallbackManager,
                     new FacebookCallback<LoginResult>() {
                         @Override
@@ -231,11 +216,7 @@ public class SignIn extends AppCompatActivity {
         }
     }
 
-    /**
-     * Configure les lanceurs d'activité
-     */
     private void setupActivityLaunchers() {
-        // Lanceur pour Google Sign-In
         googleSignInLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -252,16 +233,12 @@ public class SignIn extends AppCompatActivity {
         );
     }
 
-    /**
-     * Gère le résultat de la connexion Google
-     */
     private void handleGoogleSignInResult(Task<GoogleSignInAccount> completedTask) {
         try {
             GoogleSignInAccount account = completedTask.getResult(ApiException.class);
             if (account != null) {
                 String idToken = account.getIdToken();
                 if (idToken != null) {
-                    // Authentification avec Firebase
                     firebaseAuthWithGoogle(idToken);
                 } else {
                     loading_overlay.setVisibility(View.GONE);
@@ -292,26 +269,19 @@ public class SignIn extends AppCompatActivity {
         }
     }
 
-    /**
-     * Configure les callbacks pour l'authentification par téléphone Firebase
-     */
     private void setupPhoneAuthCallbacks() {
         mCallbacks = new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
             @Override
             public void onVerificationCompleted(@NonNull PhoneAuthCredential credential) {
-                // Vérification automatique réussie
                 Log.d(TAG, "onVerificationCompleted:" + credential);
                 Toast.makeText(SignIn.this, "Vérification automatique réussie", Toast.LENGTH_SHORT).show();
-
                 loading_overlay.setVisibility(View.GONE);
                 btnLogin.setVisibility(View.VISIBLE);
-                // Connecter l'utilisateur
                 signInWithCredential(credential);
             }
 
             @Override
             public void onVerificationFailed(@NonNull FirebaseException e) {
-                // Erreur lors de la vérification
                 Log.w(TAG, "onVerificationFailed", e);
                 loading_overlay.setVisibility(View.GONE);
                 btnLogin.setVisibility(View.VISIBLE);
@@ -327,30 +297,22 @@ public class SignIn extends AppCompatActivity {
 
             @Override
             public void onCodeSent(@NonNull String verificationId, @NonNull PhoneAuthProvider.ForceResendingToken token) {
-                // Code SMS envoyé
                 Log.d(TAG, "onCodeSent:" + verificationId);
                 loading_overlay.setVisibility(View.GONE);
                 btnLogin.setVisibility(View.VISIBLE);
-                // Enregistrer l'ID de vérification et le jeton
                 mVerificationId = verificationId;
                 mResendToken = token;
-                // Rediriger vers l'écran de saisie du code
-                redirectToVerifyCode(verificationId);
+                redirectToVerifyCode(verificationId, null, null); // Pas de nom ni mot de passe pour SignIn
             }
         };
     }
 
-    /**
-     * Valide le numéro de téléphone et lance le processus de vérification
-     */
     private void validateAndProceed() {
         hideKeyboard();
 
-        // Récupérer le numéro de téléphone complet
         String phoneNumber = countryCodePicker.getFullNumberWithPlus();
         String rawPhoneNumber = inputPhone.getText().toString().trim();
 
-        // Valider le numéro de téléphone
         if (TextUtils.isEmpty(rawPhoneNumber)) {
             inputPhone.setError("Veuillez entrer votre numéro de téléphone");
             return;
@@ -359,14 +321,9 @@ public class SignIn extends AppCompatActivity {
         btnLogin.setVisibility(View.INVISIBLE);
         loading_overlay.setVisibility(View.VISIBLE);
 
-        // Démarrer la vérification
         startPhoneNumberVerification(phoneNumber);
     }
 
-    /**
-     * Démarre la vérification du numéro de téléphone avec Firebase
-     * @param phoneNumber Numéro de téléphone avec code pays
-     */
     private void startPhoneNumberVerification(String phoneNumber) {
         PhoneAuthOptions options =
                 PhoneAuthOptions.newBuilder(mAuth)
@@ -378,21 +335,15 @@ public class SignIn extends AppCompatActivity {
         PhoneAuthProvider.verifyPhoneNumber(options);
     }
 
-    /**
-     * Redirige vers l'écran de vérification du code
-     * @param verificationId ID de vérification Firebase
-     */
-    private void redirectToVerifyCode(String verificationId) {
+    private void redirectToVerifyCode(String verificationId, String name, String password) {
         Intent intent = new Intent(SignIn.this, VerifyCode.class);
         intent.putExtra("PHONE_NUMBER", countryCodePicker.getFullNumberWithPlus());
         intent.putExtra("VERIFICATION_ID", verificationId);
+        if (name != null) intent.putExtra("NAME", name);
+        if (password != null) intent.putExtra("PASSWORD", password);
         startActivity(intent);
     }
 
-    /**
-     * Connecte l'utilisateur avec les credentials Firebase
-     * @param credential Credentials d'authentification
-     */
     private void signInWithCredential(PhoneAuthCredential credential) {
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
@@ -421,15 +372,10 @@ public class SignIn extends AppCompatActivity {
                 });
     }
 
-    /**
-     * Méthode pour la connexion avec Google
-     */
     private void signInWithGoogle() {
-        // Déconnexion préalable pour éviter les problèmes de sessions
         mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
             loading_overlay.setVisibility(View.VISIBLE);
 
-            // Vérification de la connectivité réseau
             if (!isNetworkConnected()) {
                 loading_overlay.setVisibility(View.GONE);
                 Toast.makeText(this, "Vérifiez votre connexion internet et réessayez",
@@ -449,10 +395,6 @@ public class SignIn extends AppCompatActivity {
         });
     }
 
-    /**
-     * Authentifie l'utilisateur avec Google
-     * @param idToken Jeton d'identification Google
-     */
     private void firebaseAuthWithGoogle(String idToken) {
         Log.d(TAG, "firebaseAuthWithGoogle:" + idToken.substring(0, Math.min(10, idToken.length())) + "...");
 
@@ -483,14 +425,9 @@ public class SignIn extends AppCompatActivity {
                 });
     }
 
-    /**
-     * Méthode pour la connexion avec Facebook
-     */
     private void signInWithFacebook() {
-        // Afficher l'overlay de chargement
         loading_overlay.setVisibility(View.VISIBLE);
 
-        // Vérification de la connectivité réseau
         if (!isNetworkConnected()) {
             loading_overlay.setVisibility(View.GONE);
             Toast.makeText(this, "Vérifiez votre connexion internet et réessayez",
@@ -499,10 +436,8 @@ public class SignIn extends AppCompatActivity {
         }
 
         try {
-            // Déconnexion préalable pour éviter les problèmes de sessions
             LoginManager.getInstance().logOut();
 
-            // Demande des permissions nécessaires
             LoginManager.getInstance().logInWithReadPermissions(
                     this,
                     Arrays.asList("email", "public_profile")
@@ -515,10 +450,6 @@ public class SignIn extends AppCompatActivity {
         }
     }
 
-    /**
-     * Traite le jeton d'accès Facebook et authentifie l'utilisateur avec Firebase
-     * @param token Jeton d'accès Facebook
-     */
     private void handleFacebookAccessToken(AccessToken token) {
         Log.d(TAG, "handleFacebookAccessToken:" + token);
 
@@ -544,7 +475,6 @@ public class SignIn extends AppCompatActivity {
 
                         String errorMessage = "Échec de l'authentification Facebook";
                         if (task.getException() != null) {
-                            // Si l'utilisateur a déjà un compte avec la même adresse e-mail
                             if (task.getException().getMessage() != null &&
                                     task.getException().getMessage().contains("email address is already")) {
                                 errorMessage = "Un compte existe déjà avec cette adresse e-mail. Veuillez vous connecter avec cette méthode.";
@@ -556,15 +486,11 @@ public class SignIn extends AppCompatActivity {
                         Toast.makeText(SignIn.this, errorMessage,
                                 Toast.LENGTH_LONG).show();
 
-                        // Déconnexion de Facebook pour éviter les problèmes lors des tentatives suivantes
                         LoginManager.getInstance().logOut();
                     }
                 });
     }
 
-    /**
-     * Redirige vers l'activité principale
-     */
     private void redirectToMainActivity() {
         Intent intent = new Intent(SignIn.this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -572,9 +498,6 @@ public class SignIn extends AppCompatActivity {
         finish();
     }
 
-    /**
-     * Redirige vers l'activité de profil
-     */
     private void redirectToProfileActivity() {
         Intent intent = new Intent(SignIn.this, Profil.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -582,19 +505,12 @@ public class SignIn extends AppCompatActivity {
         finish();
     }
 
-    /**
-     * Vérifie si l'appareil est connecté à internet
-     * @return true si connecté, false sinon
-     */
     private boolean isNetworkConnected() {
         android.net.ConnectivityManager cm =
                 (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         return cm != null && cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected();
     }
 
-    /**
-     * Masque le clavier virtuel
-     */
     private void hideKeyboard() {
         View view = this.getCurrentFocus();
         if (view != null) {
@@ -606,7 +522,6 @@ public class SignIn extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        // Pour les callbacks Facebook
         if (mCallbackManager != null) {
             mCallbackManager.onActivityResult(requestCode, resultCode, data);
         }

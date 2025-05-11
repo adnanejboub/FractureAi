@@ -49,7 +49,6 @@ public class VerifyCode extends AppCompatActivity {
     private CountDownTimer resendTimer;
     private boolean canResend = false;
 
-    // Firebase
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private String mVerificationId;
@@ -61,23 +60,19 @@ public class VerifyCode extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_verify_code);
 
-        // Initialiser Firebase Auth et Firestore
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        // Récupérer les données depuis l'intent
         Intent intent = getIntent();
         phoneNumber = intent.getStringExtra("PHONE_NUMBER");
         mVerificationId = intent.getStringExtra("VERIFICATION_ID");
-        name = intent.getStringExtra("NAME");
-        password = intent.getStringExtra("PASSWORD");
+        name = intent.getStringExtra("NAME"); // Peut être null si pas transmis depuis SignIn
+        password = intent.getStringExtra("PASSWORD"); // Peut être null si pas transmis
 
-        // Initialiser les vues
         phoneNumberText = findViewById(R.id.phone_number);
         resendCodeText = findViewById(R.id.resend_code);
         btnVerify = findViewById(R.id.btn_verify);
 
-        // Initialiser les champs de saisie du code
         codeDigits[0] = findViewById(R.id.code_digit_1);
         codeDigits[1] = findViewById(R.id.code_digit_2);
         codeDigits[2] = findViewById(R.id.code_digit_3);
@@ -85,29 +80,27 @@ public class VerifyCode extends AppCompatActivity {
         codeDigits[4] = findViewById(R.id.code_digit_5);
         codeDigits[5] = findViewById(R.id.code_digit_6);
 
-        // Afficher le numéro de téléphone
+        if (phoneNumber == null || mVerificationId == null) {
+            Log.e(TAG, "Données manquantes : phoneNumber=" + phoneNumber + ", verificationId=" + mVerificationId);
+            Toast.makeText(this, "Erreur : Données de vérification manquantes", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+
         phoneNumberText.setText(phoneNumber);
 
-        // Configurer la navigation automatique entre les champs de saisie
         setupCodeInputs();
 
-        // Initialiser les callbacks Firebase Phone Auth
         setupFirebaseCallbacks();
 
-        // Configurer le bouton de vérification
         btnVerify.setOnClickListener(v -> verifyCodeWithFirebase());
 
-        // Configurer le texte de renvoi de code
         setupResendCode();
 
-        // Donner le focus au premier champ et afficher le clavier
         codeDigits[0].requestFocus();
         showKeyboard(codeDigits[0]);
     }
 
-    /**
-     * Initialise les callbacks pour l'authentification par téléphone Firebase
-     */
     private void setupFirebaseCallbacks() {
         mCallbacks = new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
             @Override
@@ -139,9 +132,6 @@ public class VerifyCode extends AppCompatActivity {
         };
     }
 
-    /**
-     * Configure les champs de saisie du code pour passer automatiquement au champ suivant
-     */
     private void setupCodeInputs() {
         for (int i = 0; i < codeDigits.length; i++) {
             final int currentIndex = i;
@@ -181,9 +171,6 @@ public class VerifyCode extends AppCompatActivity {
         }
     }
 
-    /**
-     * Vérifie si tous les champs du code sont remplis
-     */
     private void checkAllFieldsFilled() {
         boolean allFilled = true;
 
@@ -198,9 +185,6 @@ public class VerifyCode extends AppCompatActivity {
         btnVerify.setAlpha(allFilled ? 1.0f : 0.6f);
     }
 
-    /**
-     * Configure le texte de renvoi de code avec un compte à rebours
-     */
     private void setupResendCode() {
         canResend = false;
         resendCodeText.setText("Renvoi possible dans 60 secondes");
@@ -228,9 +212,6 @@ public class VerifyCode extends AppCompatActivity {
         });
     }
 
-    /**
-     * Renvoie le code de vérification via Firebase
-     */
     private void resendVerificationCodeWithFirebase() {
         if (mResendToken != null) {
             PhoneAuthOptions options =
@@ -253,9 +234,6 @@ public class VerifyCode extends AppCompatActivity {
         }
     }
 
-    /**
-     * Vérifie le code saisi avec Firebase
-     */
     private void verifyCodeWithFirebase() {
         StringBuilder codeBuilder = new StringBuilder();
         for (EditText digit : codeDigits) {
@@ -270,6 +248,7 @@ public class VerifyCode extends AppCompatActivity {
 
         if (mVerificationId == null) {
             Toast.makeText(this, "Erreur: aucun code de vérification n'a été envoyé", Toast.LENGTH_SHORT).show();
+            finish();
             return;
         }
 
@@ -277,9 +256,6 @@ public class VerifyCode extends AppCompatActivity {
         signInWithPhoneAuthCredential(credential);
     }
 
-    /**
-     * Connecte l'utilisateur avec les credentials d'authentification par téléphone
-     */
     private void signInWithPhoneAuthCredential(PhoneAuthCredential credential) {
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
@@ -288,9 +264,8 @@ public class VerifyCode extends AppCompatActivity {
                         FirebaseUser user = task.getResult().getUser();
 
                         if (user != null) {
-                            // Mettre à jour le profil utilisateur avec le nom
                             UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
-                                    .setDisplayName(name)
+                                    .setDisplayName(name != null ? name : "")
                                     .build();
 
                             user.updateProfile(profileUpdates)
@@ -298,28 +273,30 @@ public class VerifyCode extends AppCompatActivity {
                                         if (profileTask.isSuccessful()) {
                                             Log.d(TAG, "User profile updated.");
 
-                                            // Mettre à jour le mot de passe
-                                            user.updatePassword(password)
-                                                    .addOnCompleteListener(passwordTask -> {
-                                                        if (passwordTask.isSuccessful()) {
-                                                            Log.d(TAG, "Password updated.");
-
-                                                            // Enregistrer les données dans Firestore
-                                                            saveUserToFirestore(user.getUid(), name,
-                                                                    user.getEmail() != null ? user.getEmail() : "",
-                                                                    phoneNumber, "", "");
-
-                                                            // Informer l'utilisateur
-                                                            Toast.makeText(VerifyCode.this, "Authentification et enregistrement réussis !", Toast.LENGTH_SHORT).show();
-
-                                                            // Rediriger
-                                                            redirectToMainActivity(user);
-                                                        } else {
-                                                            Log.w(TAG, "Password update failed", passwordTask.getException());
-                                                            Toast.makeText(VerifyCode.this, "Échec de la mise à jour du mot de passe : " + passwordTask.getException().getMessage(), Toast.LENGTH_LONG).show();
-                                                            mAuth.signOut();
-                                                        }
-                                                    });
+                                            // Ne mettez à jour le mot de passe que s'il est fourni
+                                            if (password != null && !password.isEmpty()) {
+                                                user.updatePassword(password)
+                                                        .addOnCompleteListener(passwordTask -> {
+                                                            if (passwordTask.isSuccessful()) {
+                                                                Log.d(TAG, "Password updated.");
+                                                                saveUserToFirestore(user.getUid(), name != null ? name : "",
+                                                                        user.getEmail() != null ? user.getEmail() : "",
+                                                                        phoneNumber, "", "");
+                                                                Toast.makeText(VerifyCode.this, "Authentification et enregistrement réussis !", Toast.LENGTH_SHORT).show();
+                                                                redirectToMainActivity(user);
+                                                            } else {
+                                                                Log.w(TAG, "Password update failed", passwordTask.getException());
+                                                                Toast.makeText(VerifyCode.this, "Échec de la mise à jour du mot de passe : " + passwordTask.getException().getMessage(), Toast.LENGTH_LONG).show();
+                                                                mAuth.signOut();
+                                                            }
+                                                        });
+                                            } else {
+                                                saveUserToFirestore(user.getUid(), name != null ? name : "",
+                                                        user.getEmail() != null ? user.getEmail() : "",
+                                                        phoneNumber, "", "");
+                                                Toast.makeText(VerifyCode.this, "Authentification réussie !", Toast.LENGTH_SHORT).show();
+                                                redirectToMainActivity(user);
+                                            }
                                         } else {
                                             Log.w(TAG, "User profile update failed", profileTask.getException());
                                             Toast.makeText(VerifyCode.this, "Échec de la mise à jour du profil : " + profileTask.getException().getMessage(), Toast.LENGTH_LONG).show();
@@ -343,18 +320,15 @@ public class VerifyCode extends AppCompatActivity {
                 });
     }
 
-    /**
-     * Enregistre les données utilisateur dans Firestore
-     */
     private void saveUserToFirestore(String uid, String name, String email, String phone, String address, String city) {
         Log.d(TAG, "Attempting to save user to Firestore: uid=" + uid + ", name=" + name + ", email=" + email + ", phone=" + phone);
         Map<String, Object> userData = new HashMap<>();
         userData.put("uid", uid);
-        userData.put("name", name);
-        userData.put("email", email);
-        userData.put("phone", phone);
-        userData.put("address", address);
-        userData.put("city", city);
+        userData.put("name", name != null ? name : "");
+        userData.put("email", email != null ? email : "");
+        userData.put("phone", phone != null ? phone : "");
+        userData.put("address", address != null ? address : "");
+        userData.put("city", city != null ? city : "");
         userData.put("profilePicture", "");
         userData.put("createdAt", System.currentTimeMillis());
 
@@ -370,9 +344,6 @@ public class VerifyCode extends AppCompatActivity {
                 });
     }
 
-    /**
-     * Redirige vers l'activité principale après une authentification réussie
-     */
     private void redirectToMainActivity(FirebaseUser user) {
         boolean isNewUser = user.getMetadata().getCreationTimestamp() == user.getMetadata().getLastSignInTimestamp();
         Intent intent;
@@ -386,9 +357,6 @@ public class VerifyCode extends AppCompatActivity {
         finish();
     }
 
-    /**
-     * Affiche le clavier pour une vue spécifique
-     */
     private void showKeyboard(View view) {
         if (view.requestFocus()) {
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -396,9 +364,6 @@ public class VerifyCode extends AppCompatActivity {
         }
     }
 
-    /**
-     * Masque le clavier pour une vue spécifique
-     */
     private void hideKeyboard(View view) {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);

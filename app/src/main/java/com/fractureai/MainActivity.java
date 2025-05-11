@@ -8,8 +8,10 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -25,6 +27,8 @@ import com.google.firebase.auth.FirebaseUser;
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private ImageButton userButton;
+    private TextView savoirPlus;
+    private Button startButton;
     private DrawerLayout drawerLayout;
     private ImageButton btnMenu;
     private NavigationView navigationView;
@@ -83,7 +87,47 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             Log.e("MainActivity", "Bouton utilisateur n'existe pas");
             return;
         }
-        updateUserButton(); // Mettre à jour l'icône et le comportement du bouton utilisateur
+        updateUserButton();
+
+        // Configurer le bouton "En savoir plus"
+        savoirPlus = findViewById(R.id.savoir_plus);
+        if (savoirPlus == null) {
+            Log.e("MainActivity", "TextView savoir_plus n'existe pas");
+            return;
+        }
+        savoirPlus.setOnClickListener(v -> {
+            try {
+                Intent intent = new Intent(MainActivity.this, AboutUs.class);
+                startActivity(intent);
+            } catch (Exception e) {
+                Log.e("MainActivity", "Erreur lors du démarrage de l'activité AboutUs : " + e.getMessage());
+                Toast.makeText(this, "Erreur de navigation", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Configurer le bouton "Commencer maintenant"
+        startButton = findViewById(R.id.btn_start);
+        if (startButton == null) {
+            Log.e("MainActivity", "Bouton start n'existe pas");
+            return;
+        }
+        startButton.setOnClickListener(v -> {
+            try {
+                FirebaseUser currentUser = mAuth.getCurrentUser();
+                Intent intent;
+                if (currentUser != null) {
+                    // Utilisateur authentifié : rediriger vers uploadImagesActivity
+                    intent = new Intent(MainActivity.this, uploadImagesActivity.class);
+                } else {
+                    // Utilisateur non authentifié : rediriger vers SignInEmail
+                    intent = new Intent(MainActivity.this, SignInEmail.class);
+                }
+                startActivity(intent);
+            } catch (Exception e) {
+                Log.e("MainActivity", "Erreur lors du démarrage de l'activité : " + e.getMessage());
+                Toast.makeText(this, "Erreur de navigation", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         // Mettre à jour le menu en fonction de l'état d'authentification
         updateNavigationMenu();
@@ -109,15 +153,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         MenuItem historyItem = menu.findItem(R.id.nav_history);
         MenuItem profileItem = menu.findItem(R.id.nav_profile);
         MenuItem scanItem = menu.findItem(R.id.nav_scan);
-        MenuItem helpItem = menu.findItem(R.id.nav_help); // Ajout de l'élément aide
+        MenuItem helpItem = menu.findItem(R.id.nav_help);
+        MenuItem aboutItem = menu.findItem(R.id.nav_about);
 
         if (currentUser != null) {
             // Utilisateur authentifié
             if (historyItem != null) historyItem.setVisible(true);
             if (profileItem != null) profileItem.setVisible(true);
             if (scanItem != null) scanItem.setVisible(true);
-            if (helpItem != null) helpItem.setVisible(true); // Rendre "Aide" visible
-
+            if (helpItem != null) helpItem.setVisible(true); // Aide visible pour les connectés
+            if (aboutItem != null) aboutItem.setVisible(true);
             if (loginItem != null) loginItem.setVisible(false);
             if (logoutItem != null) logoutItem.setVisible(true);
 
@@ -128,8 +173,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             if (historyItem != null) historyItem.setVisible(false);
             if (profileItem != null) profileItem.setVisible(false);
             if (scanItem != null) scanItem.setVisible(false);
-            if (helpItem != null) helpItem.setVisible(false); // Masquer "Aide"
-
+            if (helpItem != null) helpItem.setVisible(false); // Aide masquée pour les non-connectés
+            if (aboutItem != null) aboutItem.setVisible(true);
             if (loginItem != null) loginItem.setVisible(true);
             if (logoutItem != null) logoutItem.setVisible(false);
 
@@ -176,10 +221,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             Intent intent = new Intent(MainActivity.this, MainActivity.class);
             startActivity(intent);
         } else if (id == R.id.nav_scan) {
-            Intent intent = new Intent(MainActivity.this, uploadImages.class);
+            Intent intent = new Intent(MainActivity.this, uploadImagesActivity.class);
             startActivity(intent);
         } else if (id == R.id.nav_history) {
-            Toast.makeText(this, "Historique", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(MainActivity.this, HistoryActivity.class);
+            startActivity(intent);
         } else if (id == R.id.nav_profile) {
             Intent intent = new Intent(MainActivity.this, Profil.class);
             startActivity(intent);
@@ -187,9 +233,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             Intent intent = new Intent(MainActivity.this, ChatBoot.class);
             startActivity(intent);
         } else if (id == R.id.nav_about) {
-            Toast.makeText(this, "À propos", Toast.LENGTH_SHORT).show();
-        } else if (id == R.id.nav_settings) {
-            Toast.makeText(this, "Paramètres", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(MainActivity.this, AboutUs.class);
+            startActivity(intent);
         } else if (id == R.id.nav_login) {
             Intent intent = new Intent(MainActivity.this, SignInEmail.class);
             startActivity(intent);
@@ -201,7 +246,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 mAuth.signOut();
                 Toast.makeText(this, "Déconnexion réussie", Toast.LENGTH_SHORT).show();
                 updateNavigationMenu();
-                updateUserButton(); // Mettre à jour l'icône utilisateur après déconnexion
+                updateUserButton();
                 loadingOverlay.setVisibility(View.GONE);
             }, 500);
             return true;
@@ -212,7 +257,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public void onBackPressed() {
-        // Fermer le drawer si ouvert, sinon appeler le comportement par défaut
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
             drawerLayout.closeDrawer(GravityCompat.START);
         } else {
