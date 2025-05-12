@@ -8,6 +8,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -199,7 +200,7 @@ public class uploadImagesActivity extends AppCompatActivity implements Navigatio
         }
 
         if (uploadArea != null) {
-            uploadArea.setOnClickListener(v -> checkStoragePermission());
+            uploadArea.setOnClickListener(v -> launchImagePicker());
         }
 
         if (btnProcessAnalysis != null) {
@@ -213,15 +214,19 @@ public class uploadImagesActivity extends AppCompatActivity implements Navigatio
         });
     }
 
-    private void checkStoragePermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                    STORAGE_PERMISSION_CODE);
-        } else {
-            imagePickerLauncher.launch("image/*");
+    private void launchImagePicker() {
+        // Vérifier la permission uniquement pour les versions antérieures à Android 13
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                        STORAGE_PERMISSION_CODE);
+                return;
+            }
         }
+        // Lancer le sélecteur d'image directement
+        imagePickerLauncher.launch("image/*");
     }
 
     @Override
@@ -232,7 +237,7 @@ public class uploadImagesActivity extends AppCompatActivity implements Navigatio
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 imagePickerLauncher.launch("image/*");
             } else {
-                Toast.makeText(this, "Permission de stockage refusée", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Permission de stockage refusée. Impossible de sélectionner une image.", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -412,7 +417,12 @@ public class uploadImagesActivity extends AppCompatActivity implements Navigatio
     }
 
     private String compressAndConvertBitmapToBase64(Bitmap bitmap) {
-        Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, 640, 640, true);
+        // Réduire la taille initiale pour éviter les erreurs de mémoire
+        int maxDimension = 640;
+        float scale = Math.min((float) maxDimension / bitmap.getWidth(), (float) maxDimension / bitmap.getHeight());
+        int newWidth = Math.round(bitmap.getWidth() * scale);
+        int newHeight = Math.round(bitmap.getHeight() * scale);
+        Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
@@ -438,6 +448,8 @@ public class uploadImagesActivity extends AppCompatActivity implements Navigatio
             return "";
         }
 
+        // Libérer la mémoire
+        resizedBitmap.recycle();
         return base64Image;
     }
 
@@ -448,7 +460,9 @@ public class uploadImagesActivity extends AppCompatActivity implements Navigatio
         if (currentUser != null) {
             analysisData.put("userId", currentUser.getUid());
         } else {
-            analysisData.put("userId", "anonymous");
+            Log.e(TAG, "Utilisateur non connecté");
+            runOnUiThread(() -> Toast.makeText(this, "Utilisateur non connecté", Toast.LENGTH_SHORT).show());
+            return null;
         }
 
         if (base64Image.isEmpty()) {

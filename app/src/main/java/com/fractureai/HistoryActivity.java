@@ -7,6 +7,7 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -102,16 +103,30 @@ public class HistoryActivity extends AppCompatActivity implements NavigationView
             Intent intent = new Intent(HistoryActivity.this, AnalysisResultActivity.class);
             intent.putExtra("resultLabel", analysis.getResultLabel());
             intent.putExtra("confidence", analysis.getConfidence());
-            intent.putExtra("imageBase64", analysis.getImageBase64());
+            String imageBase64 = analysis.getImageBase64();
+            if (imageBase64 != null && !imageBase64.isEmpty()) {
+                try {
+                    Base64.decode(imageBase64, Base64.DEFAULT);
+                    intent.putExtra("imageBase64", imageBase64);
+                } catch (IllegalArgumentException e) {
+                    Log.e(TAG, "Base64 invalide pour document: " + e.getMessage());
+                    intent.putExtra("imageBase64", "");
+                }
+            } else {
+                intent.putExtra("imageBase64", "");
+                Log.w(TAG, "imageBase64 vide ou null");
+            }
             intent.putExtra("timestamp", analysis.getTimestamp());
-            intent.putExtra("fractureCoordinates", (ArrayList<Map<String, Float>>) analysis.getFractureCoordinates());
+            intent.putExtra("fractureCoordinates", (ArrayList<Map<String, Object>>) analysis.getFractureCoordinates());
+            Log.d(TAG, "Envoi des données à AnalysisResultActivity - imageBase64 length: " +
+                    (imageBase64 != null ? imageBase64.length() : 0));
             try {
                 startActivity(intent);
             } catch (Exception e) {
                 Log.e(TAG, "Erreur lors du démarrage de AnalysisResultActivity : " + e.getMessage());
-                Toast.makeText(this, "Erreur de navigation", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Erreur lors de l'affichage des détails: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
-        });
+        }, this::deleteHistoryItem);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(historyAdapter);
     }
@@ -139,6 +154,7 @@ public class HistoryActivity extends AppCompatActivity implements NavigationView
         if (currentUser == null) {
             Log.e(TAG, "Utilisateur non connecté");
             Toast.makeText(this, "Veuillez vous connecter pour voir l'historique", Toast.LENGTH_LONG).show();
+            loadingOverlay.setVisibility(View.GONE);
             return;
         }
 
@@ -152,9 +168,9 @@ public class HistoryActivity extends AppCompatActivity implements NavigationView
         Log.d(TAG, "Récupération de l'historique pour userId: " + currentUser.getUid());
         loadingOverlay.setVisibility(View.VISIBLE);
 
-        // Option 1: Utiliser une requête simple sans tri
         db.collection("analysis_results")
                 .whereEqualTo("userId", currentUser.getUid())
+                .orderBy("timestamp", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     Log.d(TAG, "Nombre de documents récupérés: " + queryDocumentSnapshots.size());
@@ -163,10 +179,10 @@ public class HistoryActivity extends AppCompatActivity implements NavigationView
                         Log.d(TAG, "Aucun document trouvé pour userId: " + currentUser.getUid());
                         Toast.makeText(this, "Aucun historique trouvé", Toast.LENGTH_SHORT).show();
                     } else {
-                        List<AnalysisHistory> tempList = new ArrayList<>();
                         for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                             try {
                                 AnalysisHistory history = new AnalysisHistory();
+                                history.setDocumentId(document.getId()); // Ajouter l'ID du document
                                 history.setResultLabel(document.getString("resultLabel"));
 
                                 Number confidence = document.getDouble("confidence");
@@ -175,26 +191,23 @@ public class HistoryActivity extends AppCompatActivity implements NavigationView
                                 }
                                 history.setConfidence(confidence != null ? confidence.floatValue() : 0.0f);
 
-                                history.setImageBase64(document.getString("imageBase64"));
+                                String imageBase64 = document.getString("imageBase64");
+                                if (imageBase64 != null && !imageBase64.isEmpty()) {
+                                    history.setImageBase64(imageBase64);
+                                } else {
+                                    Log.w(TAG, "imageBase64 vide ou null pour document: " + document.getId());
+                                    history.setImageBase64("");
+                                }
+
                                 history.setTimestamp(document.getString("timestamp"));
-                                history.setFractureCoordinates((List<Map<String, Float>>) document.get("fractureCoordinates"));
-                                tempList.add(history);
-                                Log.d(TAG, "Document ajouté: " + document.getId() + ", resultLabel: " + history.getResultLabel());
+                                history.setFractureCoordinates((List<Map<String, Object>>) document.get("fractureCoordinates"));
+                                historyList.add(history);
+                                Log.d(TAG, "Document ajouté: " + document.getId() + ", resultLabel: " + history.getResultLabel() +
+                                        ", imageBase64 length: " + (imageBase64 != null ? imageBase64.length() : 0));
                             } catch (Exception e) {
                                 Log.e(TAG, "Erreur lors du parsing du document " + document.getId() + ": " + e.getMessage());
                             }
                         }
-
-                        // Tri manuel par timestamp (ordre décroissant)
-                        tempList.sort((item1, item2) -> {
-                            String timestamp1 = item1.getTimestamp() != null ? item1.getTimestamp() : "";
-                            String timestamp2 = item2.getTimestamp() != null ? item2.getTimestamp() : "";
-                            return timestamp2.compareTo(timestamp1); // Ordre décroissant
-                        });
-
-                        // Ajouter à la liste finale après le tri
-                        historyList.addAll(tempList);
-                        Log.d(TAG, "Total des analyses chargées: " + historyList.size());
                     }
                     historyAdapter.notifyDataSetChanged();
                     loadingOverlay.setVisibility(View.GONE);
@@ -204,6 +217,36 @@ public class HistoryActivity extends AppCompatActivity implements NavigationView
                     loadingOverlay.setVisibility(View.GONE);
                     Toast.makeText(this, "Erreur lors du chargement de l'historique: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
+    }
+
+    private void deleteHistoryItem(String documentId) {
+        if (!isNetworkAvailable()) {
+            Toast.makeText(this, "Vérifiez votre connexion réseau", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Confirmer la suppression")
+                .setMessage("Voulez-vous vraiment supprimer cet élément de l'historique ?")
+                .setPositiveButton("Oui", (dialog, which) -> {
+                    loadingOverlay.setVisibility(View.VISIBLE);
+                    db.collection("analysis_results").document(documentId)
+                            .delete()
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d(TAG, "Document supprimé avec succès : " + documentId);
+                                Toast.makeText(this, "Élément supprimé avec succès", Toast.LENGTH_SHORT).show();
+                                fetchHistory(); // Rafraîchir la liste après suppression
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Erreur lors de la suppression du document : " + e.getMessage(), e);
+                                Toast.makeText(this, "Erreur lors de la suppression : " + e.getMessage(), Toast.LENGTH_LONG).show();
+                            })
+                            .addOnCompleteListener(task -> {
+                                loadingOverlay.setVisibility(View.GONE);
+                            });
+                })
+                .setNegativeButton("Non", null)
+                .show();
     }
 
     private void updateNavigationMenu() {
@@ -299,11 +342,20 @@ public class HistoryActivity extends AppCompatActivity implements NavigationView
 
     // Model class for analysis history
     public static class AnalysisHistory {
+        private String documentId; // Ajout du champ pour l'ID du document
         private String resultLabel;
         private float confidence;
         private String imageBase64;
         private String timestamp;
-        private List<Map<String, Float>> fractureCoordinates;
+        private List<Map<String, Object>> fractureCoordinates;
+
+        public String getDocumentId() {
+            return documentId;
+        }
+
+        public void setDocumentId(String documentId) {
+            this.documentId = documentId;
+        }
 
         public String getResultLabel() {
             return resultLabel;
@@ -337,11 +389,11 @@ public class HistoryActivity extends AppCompatActivity implements NavigationView
             this.timestamp = timestamp;
         }
 
-        public List<Map<String, Float>> getFractureCoordinates() {
+        public List<Map<String, Object>> getFractureCoordinates() {
             return fractureCoordinates;
         }
 
-        public void setFractureCoordinates(List<Map<String, Float>> fractureCoordinates) {
+        public void setFractureCoordinates(List<Map<String, Object>> fractureCoordinates) {
             this.fractureCoordinates = fractureCoordinates;
         }
     }
@@ -350,14 +402,20 @@ public class HistoryActivity extends AppCompatActivity implements NavigationView
     public static class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHolder> {
         private final List<AnalysisHistory> historyList;
         private final OnHistoryClickListener clickListener;
+        private final OnDeleteClickListener deleteClickListener;
 
         public interface OnHistoryClickListener {
             void onHistoryClick(AnalysisHistory analysis);
         }
 
-        public HistoryAdapter(List<AnalysisHistory> historyList, OnHistoryClickListener clickListener) {
+        public interface OnDeleteClickListener {
+            void onDeleteClick(String documentId);
+        }
+
+        public HistoryAdapter(List<AnalysisHistory> historyList, OnHistoryClickListener clickListener, OnDeleteClickListener deleteClickListener) {
             this.historyList = historyList;
             this.clickListener = clickListener;
+            this.deleteClickListener = deleteClickListener;
         }
 
         @NonNull
@@ -374,6 +432,16 @@ public class HistoryActivity extends AppCompatActivity implements NavigationView
             holder.confidence.setText(String.format("Confiance: %.2f%%", history.getConfidence() * 100));
             holder.timestamp.setText("Date: " + (history.getTimestamp() != null ? history.getTimestamp() : "Inconnu"));
             holder.itemView.setOnClickListener(v -> clickListener.onHistoryClick(history));
+            holder.btnDelete.setOnClickListener(v -> {
+                if (deleteClickListener != null) {
+                    String documentId = history.getDocumentId();
+                    if (documentId != null) {
+                        deleteClickListener.onDeleteClick(documentId);
+                    } else {
+                        Log.e(TAG, "DocumentId est null pour l'élément à la position : " + position);
+                    }
+                }
+            });
         }
 
         @Override
@@ -383,12 +451,14 @@ public class HistoryActivity extends AppCompatActivity implements NavigationView
 
         public static class ViewHolder extends RecyclerView.ViewHolder {
             TextView resultLabel, confidence, timestamp;
+            ImageButton btnDelete;
 
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
                 resultLabel = itemView.findViewById(R.id.history_result_label);
                 confidence = itemView.findViewById(R.id.history_confidence);
                 timestamp = itemView.findViewById(R.id.history_timestamp);
+                btnDelete = itemView.findViewById(R.id.btn_delete);
             }
         }
     }

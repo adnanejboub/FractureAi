@@ -10,38 +10,61 @@
     app:cardElevation="4dp"
     app:cardBackgroundColor="#FFFFFF">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:padding="16dp">
 
-        <TextView
-            android:id="@+id/history_result_label"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:id="@+id/content_layout"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Résultat"
-            android:textColor="#1F2937"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:orientation="vertical"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/btn_delete"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
 
-        <TextView
-            android:id="@+id/history_confidence"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Confiance: 0%"
-            android:textColor="#4B5563"
-            android:textSize="14sp" />
+            <TextView
+                android:id="@+id/history_result_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Résultat"
+                android:textColor="#1F2937"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/history_timestamp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Date: Inconnu"
-            android:textColor="#4B5563"
-            android:textSize="14sp" />
+            <TextView
+                android:id="@+id/history_confidence"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Confiance: 0%"
+                android:textColor="#4B5563"
+                android:textSize="14sp" />
 
-    </LinearLayout>
+            <TextView
+                android:id="@+id/history_timestamp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Date: Inconnu"
+                android:textColor="#4B5563"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btn_delete"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Supprimer cet élément"
+            android:src="@drawable/delete_ic"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

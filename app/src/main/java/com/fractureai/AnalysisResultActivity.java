@@ -25,6 +25,8 @@ import java.util.Map;
 
 public class AnalysisResultActivity extends AppCompatActivity {
 
+    private static final String TAG = "AnalysisResult";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,8 +39,17 @@ public class AnalysisResultActivity extends AppCompatActivity {
             TextView resultClass = findViewById(R.id.result_class);
             TextView resultConfidence = findViewById(R.id.result_confidence);
             TextView resultTimestamp = findViewById(R.id.result_timestamp);
-            TextView fractureCoordinatesText = findViewById(R.id.fracture_coordinates); // Nouveau TextView pour les coordonnées
+            TextView fractureCoordinatesText = findViewById(R.id.fracture_coordinates);
             Button btnBack = findViewById(R.id.btn_back);
+
+            // Vérifier que les vues ne sont pas null
+            if (resultImage == null || resultClass == null || resultConfidence == null ||
+                    resultTimestamp == null || fractureCoordinatesText == null || btnBack == null) {
+                Log.e(TAG, "Une ou plusieurs vues sont null");
+                Toast.makeText(this, "Erreur d'affichage, vérifiez le layout", Toast.LENGTH_LONG).show();
+                finish();
+                return;
+            }
 
             // Récupérer les données de l'intent
             Intent intent = getIntent();
@@ -46,61 +57,86 @@ public class AnalysisResultActivity extends AppCompatActivity {
             String label = intent.getStringExtra("resultLabel");
             float confidence = intent.getFloatExtra("confidence", 0.0f);
             String timestamp = intent.getStringExtra("timestamp");
-            ArrayList<Map<String, Float>> fractureCoordinates = (ArrayList<Map<String, Float>>) intent.getSerializableExtra("fractureCoordinates");
+            ArrayList<Map<String, Object>> fractureCoordinates = (ArrayList<Map<String, Object>>) intent.getSerializableExtra("fractureCoordinates");
 
-            Log.d("AnalysisResult", "Données reçues - imageBase64: " + (base64Image != null) + ", label: " + label + ", confidence: " + confidence + ", timestamp: " + timestamp + ", fractureCoordinates: " + (fractureCoordinates != null ? fractureCoordinates.toString() : "null"));
+            Log.d(TAG, "Données reçues - imageBase64 length: " + (base64Image != null ? base64Image.length() : 0) +
+                    ", label: " + label + ", confidence: " + confidence + ", timestamp: " + timestamp +
+                    ", fractureCoordinates: " + (fractureCoordinates != null ? fractureCoordinates.size() : "null"));
 
             // Afficher l'image avec les fractures détectées
-            if (base64Image != null) {
+            if (base64Image != null && !base64Image.isEmpty()) {
                 try {
+                    // Décoder l'image Base64 avec gestion de la mémoire
                     byte[] decodedBytes = Base64.decode(base64Image, Base64.DEFAULT);
-                    Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inSampleSize = calculateInSampleSize(decodedBytes.length);
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length, options);
 
-                    // Créer une copie modifiable de l'image
-                    Bitmap mutableBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
-                    Canvas canvas = new Canvas(mutableBitmap);
-                    Paint paint = new Paint();
-                    paint.setColor(Color.RED); // Couleur des rectangles
-                    paint.setStyle(Paint.Style.STROKE);
-                    paint.setStrokeWidth(5f); // Épaisseur du contour
+                    if (bitmap != null) {
+                        // Créer une copie modifiable de l'image
+                        Bitmap mutableBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                        bitmap.recycle(); // Libérer la Bitmap originale
+                        Canvas canvas = new Canvas(mutableBitmap);
+                        Paint paint = new Paint();
+                        paint.setColor(Color.RED);
+                        paint.setStyle(Paint.Style.STROKE);
+                        paint.setStrokeWidth(5f);
 
-                    // Dessiner les rectangles pour chaque fracture détectée
-                    if (fractureCoordinates != null && !fractureCoordinates.isEmpty()) {
-                        int imageWidth = mutableBitmap.getWidth();
-                        int imageHeight = mutableBitmap.getHeight();
+                        // Dessiner les rectangles pour chaque fracture détectée
+                        if (fractureCoordinates != null && !fractureCoordinates.isEmpty()) {
+                            int imageWidth = mutableBitmap.getWidth();
+                            int imageHeight = mutableBitmap.getHeight();
 
-                        StringBuilder coordsText = new StringBuilder("Coordonnées des fractures :\n");
-                        for (Map<String, Float> coords : fractureCoordinates) {
-                            // Convertir les coordonnées normalisées en pixels
-                            float xMin = coords.get("xMin") * imageWidth;
-                            float yMin = coords.get("yMin") * imageHeight;
-                            float xMax = coords.get("xMax") * imageWidth;
-                            float yMax = coords.get("yMax") * imageHeight;
+                            for (Map<String, Object> coords : fractureCoordinates) {
+                                // Convertir les valeurs Double en Float
+                                Float xMin = convertToFloat(coords.get("xMin"));
+                                Float yMin = convertToFloat(coords.get("yMin"));
+                                Float xMax = convertToFloat(coords.get("xMax"));
+                                Float yMax = convertToFloat(coords.get("yMax"));
+                                Float coordConfidence = convertToFloat(coords.get("confidence"));
 
-                            // Dessiner un rectangle sur l'image
-                            canvas.drawRect(xMin, yMin, xMax, yMax, paint);
+                                if (xMin == null || yMin == null || xMax == null || yMax == null || coordConfidence == null) {
+                                    Log.w(TAG, "Coordonnées invalides dans fractureCoordinates");
+                                    continue;
+                                }
 
-                            // Ajouter les coordonnées au texte (facultatif)
-                            coordsText.append(String.format("xMin: %.2f, yMin: %.2f, xMax: %.2f, yMax: %.2f, Confiance: %.2f%%\n",
-                                    xMin, yMin, xMax, yMax, coords.get("confidence") * 100));
+                                float pixelXMin = xMin * imageWidth;
+                                float pixelYMin = yMin * imageHeight;
+                                float pixelXMax = xMax * imageWidth;
+                                float pixelYMax = yMax * imageHeight;
+
+                                canvas.drawRect(pixelXMin, pixelYMin, pixelXMax, pixelYMax, paint);
+                            }
+                            fractureCoordinatesText.setText("Fractures détectées.");
+                        } else {
+                            fractureCoordinatesText.setText("Aucune fracture détectée.");
                         }
-                        fractureCoordinatesText.setText(coordsText.toString());
-                    } else {
-                        fractureCoordinatesText.setText("Aucune fracture détectée.");
-                    }
 
-                    // Afficher l'image avec les rectangles
-                    resultImage.setImageBitmap(mutableBitmap);
-                } catch (Exception e) {
-                    Log.e("AnalysisResult", "Erreur lors du décodage ou du dessin de l'image : " + e.getMessage());
+                        resultImage.setImageBitmap(mutableBitmap);
+                    } else {
+                        throw new IllegalStateException("Échec du décodage de l'image Bitmap");
+                    }
+                } catch (OutOfMemoryError e) {
+                    Log.e(TAG, "Erreur de mémoire lors du décodage de l'image : " + e.getMessage());
                     resultImage.setImageResource(android.R.drawable.ic_menu_report_image);
-                    Toast.makeText(this, "Erreur lors du chargement de l'image", Toast.LENGTH_SHORT).show();
+                    fractureCoordinatesText.setText("Erreur : Image trop grande pour être affichée.");
+                    Toast.makeText(this, "Image trop grande, essayez une image plus petite", Toast.LENGTH_LONG).show();
+                } catch (IllegalArgumentException e) {
+                    Log.e(TAG, "Base64 invalide : " + e.getMessage());
+                    resultImage.setImageResource(android.R.drawable.ic_menu_report_image);
+                    fractureCoordinatesText.setText("Erreur : Image corrompue ou format invalide.");
+                    Toast.makeText(this, "Erreur de téléchargement : Image corrompue", Toast.LENGTH_SHORT).show();
+                } catch (Exception e) {
+                    Log.e(TAG, "Erreur lors du décodage ou du dessin de l'image : " + e.getMessage(), e);
+                    resultImage.setImageResource(android.R.drawable.ic_menu_report_image);
                     fractureCoordinatesText.setText("Erreur lors du chargement de l'image.");
+                    Toast.makeText(this, "Erreur de téléchargement de l'image : " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             } else {
+                Log.w(TAG, "base64Image est null ou vide");
                 resultImage.setImageResource(android.R.drawable.ic_menu_report_image);
-                Log.w("AnalysisResult", "base64Image est null");
                 fractureCoordinatesText.setText("Aucune image disponible.");
+                Toast.makeText(this, "Aucune image disponible", Toast.LENGTH_SHORT).show();
             }
 
             // Afficher les résultats
@@ -117,16 +153,37 @@ public class AnalysisResultActivity extends AppCompatActivity {
                 v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
                 return insets;
             });
-
-            // Vérification finale
-            if (resultImage == null || resultClass == null || resultConfidence == null || resultTimestamp == null || fractureCoordinatesText == null || btnBack == null) {
-                Log.e("AnalysisResult", "Une ou plusieurs vues sont null");
-                Toast.makeText(this, "Erreur d'affichage, vérifiez le layout", Toast.LENGTH_LONG).show();
-            }
         } catch (Exception e) {
-            Log.e("AnalysisResult", "Erreur critique dans onCreate : " + e.getMessage(), e);
+            Log.e(TAG, "Erreur critique dans onCreate : " + e.getMessage(), e);
             Toast.makeText(this, "Erreur critique : " + e.getMessage(), Toast.LENGTH_LONG).show();
             finish();
         }
+    }
+
+    private Float convertToFloat(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Double) {
+            return ((Double) value).floatValue();
+        } else if (value instanceof Float) {
+            return (Float) value;
+        } else if (value instanceof Number) {
+            return ((Number) value).floatValue();
+        } else {
+            Log.w(TAG, "Type inattendu pour la valeur : " + value.getClass().getName());
+            return null;
+        }
+    }
+
+    private int calculateInSampleSize(int dataLength) {
+        int inSampleSize = 1;
+        if (dataLength > 1_000_000) { // Réduire pour les images > 1 Mo
+            inSampleSize = 2;
+        } else if (dataLength > 4_000_000) { // Réduire encore pour les images > 4 Mo
+            inSampleSize = 4;
+        }
+        Log.d(TAG, "inSampleSize calculé : " + inSampleSize);
+        return inSampleSize;
     }
 }
