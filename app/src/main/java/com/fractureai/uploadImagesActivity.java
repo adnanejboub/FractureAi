@@ -129,6 +129,23 @@ public class uploadImagesActivity extends AppCompatActivity implements Navigatio
                 }
             });
 
+    private final ActivityResultLauncher<String[]> permissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestMultiplePermissions(),
+            result -> {
+                boolean allGranted = true;
+                for (Boolean granted : result.values()) {
+                    if (!granted) {
+                        allGranted = false;
+                        break;
+                    }
+                }
+                if (allGranted) {
+                    imagePickerLauncher.launch("image/*");
+                } else {
+                    Toast.makeText(this, "Permission de stockage refusée. Impossible de sélectionner une image.", Toast.LENGTH_LONG).show();
+                }
+            });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -215,17 +232,22 @@ public class uploadImagesActivity extends AppCompatActivity implements Navigatio
     }
 
     private void launchImagePicker() {
-        // Vérifier la permission uniquement pour les versions antérieures à Android 13
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13+ : Utiliser READ_MEDIA_IMAGES
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)
+                    != PackageManager.PERMISSION_GRANTED) {
+                permissionLauncher.launch(new String[]{Manifest.permission.READ_MEDIA_IMAGES});
+                return;
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Android 10-12 : Utiliser READ_EXTERNAL_STORAGE si nécessaire
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
                     != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                        STORAGE_PERMISSION_CODE);
+                permissionLauncher.launch(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE});
                 return;
             }
         }
-        // Lancer le sélecteur d'image directement
+        // Lancer le sélecteur d'image si les permissions sont accordées
         imagePickerLauncher.launch("image/*");
     }
 
